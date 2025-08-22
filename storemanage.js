@@ -132,7 +132,6 @@ async function setSoldItemQuantity(itemID, quantity) {
 // addeditemstostore table
 async function addItemstoStoreDaily(itemID, itemName, quantity, price, pdate, ptime, username, remarks) {
   
-  alert('Enterred to insert');
   const tableName = TABLES.addeditemstostore;
   const { data, error } = await supabase
     .from(tableName) // ✅ correct table name
@@ -142,16 +141,15 @@ async function addItemstoStoreDaily(itemID, itemName, quantity, price, pdate, pt
         itemname: itemName,
         quantityadded: quantity,
         price: price,
-        addeddate : null, 
-        addedtime : null,
+        addeddate : pdate, 
+        addedtime : ptime,
         addedby : username,
         remarks: remarks
       }
     ]);
 
       // Fetch storeinventory from Supabase
-   
-alert('Completed insert');
+  
 
   setAddedItemQuantity(itemID, quantity);
     if(AddedItemAvailable == 2){

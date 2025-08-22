@@ -159,8 +159,10 @@
     const itemcost = document.getElementById("aprice").value;
     const remarks = document.getElementById("aremarks").value;
     const now = new Date();
-    const dateString = now.toLocaleDateString();
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const pdate = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    const ptime = now.toTimeString().split(' ')[0]; // "HH:MM:SS"
+    //const dateString = now.toLocaleDateString();
+    //const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const username = localStorage.getItem('store_username');;
 
     const tableName = TABLES.storeinventory;
@@ -178,8 +180,8 @@
       itemname,
       quantity,
       (quantity * itemcost),
-      dateString,
-      timeString,
+      pdate,
+      ptime,
       username,
       remarks
     );
