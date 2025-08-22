@@ -142,8 +142,8 @@ async function addItemstoStoreDaily(itemID, itemName, quantity, price, pdate, pt
         itemname: itemName,
         quantityadded: quantity,
         price: price,
-        addeddate : pdate, 
-        addedtime : ptime,
+        addeddate : null, 
+        addedtime : null,
         addedby : username,
         remarks: remarks
       }
