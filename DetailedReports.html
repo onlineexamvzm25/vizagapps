@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reports Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="config.js"></script>
+   <link rel="stylesheet" href="DetailedReports.css">
+</head>
+<body>
+
+  <div class="button-container">
+    <button id="btnDate" class="report-btn">Date Reports</button>
+    <button id="btnItem" class="report-btn">Item Reports</button>
+    <button id="btnSaleAnalysis" class="report-btn">Sale Analysis Reports</button>
+    <button id="btnNotSold" class="report-btn">Not Sold Reports</button>
+    <button id="homeBtn">Home</button>
+  </div>
+
+  <div id="controls"></div>
+  <div id="results"></div>
+
+  <script>
+    // Supabase configuration
+    // ✅ Replace with your actual Supabase URL and Key
+    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
+
+    supabase = supabase.createClient(supabaseUrl, supabaseKey); // ✅ Use window
+
+    const controlsDiv = document.getElementById('controls');
+    const resultsDiv = document.getElementById('results');
+
+    // Utility: Create a radio button group
+  function createRadioGroup(name, labels, values) {
+  const container = document.createElement('div');
+  container.className = 'horizontal-form';
+  labels.forEach((lbl, idx) => {
+    const id = `${name}-${values[idx]}`;
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.id = id;
+    radio.name = name;
+    radio.value = values[idx];
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = lbl;
+    container.append(radio, label);
+  });
+  return container;
+}
+
+
+    // Render table from Supabase query
+    function renderTable(rows) {
+      resultsDiv.innerHTML = '';
+      if (!rows.length) {
+        resultsDiv.textContent = 'No records found for this selection.';
+        return;
+      }
+      const table = document.createElement('table');
+      const header = table.createTHead().insertRow();
+      Object.keys(rows[0]).forEach((col) => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        header.appendChild(th);
+      });
+      const tbody = table.createTBody();
+      rows.forEach((row) => {
+        const tr = tbody.insertRow();
+        Object.values(row).forEach((val) => {
+          const td = tr.insertCell();
+          td.textContent = val;
+        });
+      });
+      resultsDiv.appendChild(table);
+    }
+
+  async function handleDateReport() {
+  controlsDiv.innerHTML = '';
+  resultsDiv.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'horizontal-form'; // Ensure horizontal layout
+
+  // Report Type Combo Box
+  const cbLabel = document.createElement('label');
+  cbLabel.textContent = 'Report Type: ';
+  const cb = document.createElement('select');
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Select';
+  defaultOption.selected = true;
+  defaultOption.disabled = true;
+  cb.appendChild(defaultOption);
+
+  ['Single Date', 'Last 7 Days', 'Select Month', 'Entire'].forEach((o) => {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o;
+    cb.appendChild(opt);
+  });
+
+  wrapper.append(cbLabel, cb);
+  controlsDiv.appendChild(wrapper);
+
+  const dynamicWrapper = document.createElement('div');
+  dynamicWrapper.className = 'horizontal-form';
+  controlsDiv.appendChild(dynamicWrapper);
+
+  cb.addEventListener('change', () => {
+  dynamicWrapper.innerHTML = '';
+  const choice = cb.value;
+
+  // Single row to hold everything horizontally
+  const row = document.createElement('div');
+  row.className = 'horizontal-form';
+
+  // Create radio group
+  const radioGroup = createRadioGroup('rptType', ['Added Items', 'Sold Items'], ['1', '2']);
+  row.appendChild(radioGroup);
+
+  let dateControl = null;
+
+  if (choice === 'Single Date') {
+    dateControl = document.createElement('input');
+    dateControl.type = 'date';
+  } else if (choice === 'Select Month') {
+    dateControl = document.createElement('select');
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = new Date(0, m - 1).toLocaleString('default', { month: 'long' });
+      dateControl.appendChild(opt);
+    }
+  }
+
+  if (dateControl) row.appendChild(dateControl);
+  dynamicWrapper.appendChild(row);
+
+  // Add Get Report button outside the row (optional styling choice)
+  showGetButton(() => {
+    const payload = {
+      type: document.querySelector('input[name="rptType"]:checked')?.value
+    };
+    if (choice === 'Single Date') payload.singleDate = dateControl.value;
+    else if (choice === 'Last 7 Days') payload.range = 'last7';
+    else if (choice === 'Select Month') payload.month = dateControl.value;
+    else payload.entire = true;
+
+    fetchDateData(payload);
+  });
+});
+
+     
+}
+
+    // Item report logic
+    async function handleItemReport() {
+      controlsDiv.innerHTML = '';
+      resultsDiv.innerHTML = '';
+
+      const tableName = TABLES.storeconfigitems;
+      const items = await supabase
+        .from(tableName)
+        .select('itemname');
+
+      const itemSel = document.createElement('select');
+      items.data.forEach(({ itemname }) => {
+        const opt = document.createElement('option');
+        opt.value = itemname;
+        opt.textContent = itemname;
+        itemSel.appendChild(opt);
+      });
+
+      const radioGroup = createRadioGroup('itemRptType', ['Added Items', 'Sold Items'], ['1', '2']);
+      const timeSel = document.createElement('select');
+      ['Select','Single Date', 'Last 7 Days', 'Select Month', 'Entire'].forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o;
+        opt.textContent = o;
+        timeSel.appendChild(opt);
+      });
+
+      const dynamicControls = document.createElement('div');
+      timeSel.addEventListener('change', () => {
+        dynamicControls.innerHTML = '';
+        const choice = timeSel.value;
+        if (choice === 'Single Date') {
+          const dt = document.createElement('input');
+          dt.type = 'date';
+          const dateWrapper = document.createElement('div');
+dateWrapper.className = 'horizontal-form';
+dateWrapper.appendChild(dt); // or monthSel
+dynamicControls.appendChild(dateWrapper);
+
+          showGetButton(() => fetchItemData({ item: itemSel.value, type: document.querySelector('input[name="itemRptType"]:checked').value, singleDate: dt.value }));
+        } else if (choice === 'Last 7 Days') {
+          showGetButton(() => fetchItemData({ item: itemSel.value, type: document.querySelector('input[name="itemRptType"]:checked').value, range: 'last7' }));
+        } else if (choice === 'Select Month') {
+          const monthSel = document.createElement('select');
+          for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = new Date(0, m - 1).toLocaleString('default', { month: 'long' });
+            monthSel.appendChild(opt);
+          }
+          dynamicControls.appendChild(monthSel);
+          showGetButton(() => fetchItemData({ item: itemSel.value, type: document.querySelector('input[name="itemRptType"]:checked').value, month: monthSel.value }));
+        } else {
+          showGetButton(() => fetchItemData({ item: itemSel.value, type: document.querySelector('input[name="itemRptType"]:checked').value, entire: true }));
+        }
+      });
+
+      const formRow1 = document.createElement('div');
+formRow1.className = 'horizontal-form';
+formRow1.append('Select Item: ', itemSel);
+
+const formRow2 = document.createElement('div');
+formRow2.className = 'horizontal-form';
+formRow2.appendChild(radioGroup);
+
+const formRow3 = document.createElement('div');
+formRow3.className = 'horizontal-form';
+formRow3.appendChild(timeSel);
+
+controlsDiv.append(formRow1, formRow2, formRow3, dynamicControls);
+
+
+    }
+
+    // Sale analysis logic
+    async function handleSaleAnalysis() {
+      controlsDiv.innerHTML = '';
+      resultsDiv.innerHTML = '';
+
+      const timeSel = document.createElement('select');
+      ['Select','Single Date', 'Last 7 Days', 'Select Month', 'Entire'].forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o;
+        opt.textContent = o;
+        timeSel.appendChild(opt);
+      });
+
+      const dynamicControls = document.createElement('div');
+      timeSel.addEventListener('change', () => {
+        dynamicControls.innerHTML = '';
+        const choice = timeSel.value;
+        if (choice === 'Single Date') {
+          const dt = document.createElement('input');
+          dt.type = 'date';
+          const dateWrapper = document.createElement('div');
+dateWrapper.className = 'horizontal-form';
+dateWrapper.appendChild(dt); // or monthSel
+dynamicControls.appendChild(dateWrapper);
+
+          showGetButton(() => fetchSaleAnalysis({ singleDate: dt.value }));
+        } else if (choice === 'Last 7 Days') {
+          showGetButton(() => fetchSaleAnalysis({ range: 'last7' }));
+        } else if (choice === 'Select Month') {
+          const monthSel = document.createElement('select');
+          for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = new Date(0, m - 1).toLocaleString('default', { month: 'long' });
+            monthSel.appendChild(opt);
+          }
+          dynamicControls.appendChild(monthSel);
+          showGetButton(() => fetchSaleAnalysis({ month: monthSel.value }));
+        } else {
+          showGetButton(fetchSaleAnalysis);
+        }
+      });
+
+      controlsDiv.append('Select Period: ', timeSel, dynamicControls);
+    }
+
+    // Placeholder for Not Sold Reports
+    function handleNotSold() {
+      controlsDiv.innerHTML = '';
+      resultsDiv.innerHTML = '';
+
+      const msg = document.createElement('p');
+      msg.textContent = 'Not Sold Reports feature is not implemented yet.';
+      resultsDiv.appendChild(msg);
+    }
+
+  function showGetButton(handler) {
+  let btn = document.getElementById('getReportBtn');
+
+  if (!btn) {
+    // Create the button only if it doesn't exist
+    btn = document.createElement('button');
+    btn.id = 'getReportBtn';  // Assign an ID to find it later
+    btn.textContent = 'Get Report';
+    controlsDiv.appendChild(btn);
+  }
+
+  // Always update the handler
+  btn.onclick = handler;
+}
+
+
+    // Fetch data for Date Reports
+    async function fetchDateData({ singleDate, range, month, entire, type }) {
+      const tableName = TABLES.solditemsfromstore;
+      const tableName1 = TABLES.addeditemstostore;
+      const table = type === '1' ?  tableName1 : tableName;
+      let query = supabase.from(table).select('*');
+
+      if (singleDate) {
+        query = query.eq(type === '1' ? 'addeddate' : 'solddate', singleDate);
+      } else if (range === 'last7') {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 6);
+        query = query.gte(type === '1' ? 'addeddate' : 'solddate', fromDate.toISOString().split('T')[0]);
+      } else if (month) {
+         const year = new Date().getFullYear();
+
+  // Get the start of the current month
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+
+  // Calculate next month's date safely
+          const nextMonthDate = new Date(year, month, 1); // month is 1-based in your code
+          const nextMonthYear = nextMonthDate.getFullYear();
+          const nextMonth = nextMonthDate.getMonth() + 1; // getMonth() gives 0-based month
+
+          const endDate = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+          query = query
+          .gte(type === '1' ? 'addeddate' : 'solddate', startDate)
+          .lt(type === '1' ? 'addeddate' : 'solddate', endDate);  
+      
+      }
+      const { data, error } = await query.order('itemname', { ascending: true });
+      if (error) {
+        resultsDiv.textContent = 'Error: ' + error.message;
+      } else {
+        renderTable(data);
+      }
+    }
+
+    // Fetch data for Item Reports
+    async function fetchItemData({ item, type, singleDate, range, month, entire }) {
+      const tableName = TABLES.solditemsfromstore;
+      const tableName1 = TABLES.addeditemstostore;
+      const table = type === '1' ? tableName1 : tableName;
+      let query = supabase.from(table).select('*').eq('itemname', item);
+
+      if (singleDate) {
+        query = query.eq(type === '1' ? 'addeddate' : 'solddate', singleDate);
+      } else if (range === 'last7') {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 6);
+        query = query.gte(type === '1' ? 'addeddate' : 'solddate', fromDate.toISOString().split('T')[0]);
+      } else if (month) {
+          const year = new Date().getFullYear();
+
+  // Get the start of the current month
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+
+  // Calculate next month's date safely
+          const nextMonthDate = new Date(year, month, 1); // month is 1-based in your code
+          const nextMonthYear = nextMonthDate.getFullYear();
+          const nextMonth = nextMonthDate.getMonth() + 1; // getMonth() gives 0-based month
+
+          const endDate = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+          query = query
+          .gte(type === '1' ? 'addeddate' : 'solddate', startDate)
+          .lt(type === '1' ? 'addeddate' : 'solddate', endDate);
+}
+
+      const { data, error } = await query.order('itemname', { ascending: true });
+      if (error) {
+        resultsDiv.textContent = 'Error: ' + error.message;
+      } else {
+        renderTable(data);
+      }
+    }
+
+    // Fetch data for Sale Analysis
+    async function fetchSaleAnalysis({ singleDate, range, month }) {
+      const tableName = TABLES.solditemsfromstore;
+      let query = supabase.from(tableName).select('itemname, soldquantity');
+      if (singleDate) {
+        query = query.eq('solddate', singleDate);
+      } else if (range === 'last7') {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 6);
+        query = query.gte('solddate', fromDate.toISOString().split('T')[0]);
+      } else if (month) {
+         const year = new Date().getFullYear();
+
+  // Get the start of the current month
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+
+  // Calculate next month's date safely
+          const nextMonthDate = new Date(year, month, 1); // month is 1-based in your code
+          const nextMonthYear = nextMonthDate.getFullYear();
+          const nextMonth = nextMonthDate.getMonth() + 1; // getMonth() gives 0-based month
+
+          const endDate = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+          query = query
+          .gte(type === '1' ? 'addeddate' : 'solddate', startDate)
+          .lt(type === '1' ? 'addeddate' : 'solddate', endDate);  
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        resultsDiv.textContent = 'Error: ' + error.message;
+        return;
+      }
+
+      const totals = data.reduce((acc, row) => {
+        acc[row.itemname] = (acc[row.itemname] || 0) + row.soldquantity;
+        return acc;
+      }, {});
+
+      const rows = Object.entries(totals)
+        .sort((a, b) => b[1] - a[1])
+        .map(([itemname, soldquantity]) => ({ itemname, soldquantity }));
+
+      renderTable(rows);
+    }
+
+    // Attach event listeners
+    document.getElementById('btnDate').onclick = handleDateReport;
+    document.getElementById('btnItem').onclick = handleItemReport;
+    document.getElementById('btnSaleAnalysis').onclick = handleSaleAnalysis;
+    document.getElementById('btnNotSold').onclick = handleNotSold;
+    document.getElementById('homeBtn').onclick = () => {
+      window.location.href = 'AdminReports.html';
+    };
+  </script>
+</body>
+</html>

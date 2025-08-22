@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>STORE MANAGEMENT SYSTEM</title>
+
+  <script src="config.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #2c3e50;
+    }
+
+    .button-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 12px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #goHome {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: #e67e22;
+    }
+
+    #goHome:hover {
+      background-color: #d35400;
+    }
+
+    #reportSection {
+      margin-top: 40px;
+    }
+
+    #reportTitle {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #34495e;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #ecf0f1;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>REPORTS PAGE....!</h2>
+
+  <button id="goHome" onclick="GoHome()">BACK TO HOME</button>
+
+  <div class="button-container">
+    <button onclick="loadCurrentStock()">PRESENT STOCK REPORTS</button>
+    <button onclick="AddedStockReports()">ADDED STOCK REPORTS</button>
+    <button onclick="SoldStockReports()">SOLD STOCK REPORTS</button>
+    <button onclick="DetailedReports()">DETAILED ANALYSIS REPORTS</button>
+  </div>
+
+  <div id="reportSection">
+    <div id="reportTitle"></div>
+    <div id="reportOutput"></div>
+  </div>
+
+  <script>
+    // ✅ Replace with your actual Supabase URL and Key
+    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
+
+    supabase = supabase.createClient(supabaseUrl, supabaseKey); // ✅ Use window
+    async function loadCurrentStock() {
+      const tableName = TABLES.storeinventory;
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('itemid, itemname, quantity, price, remarks')
+        .order('itemid', { ascending: true });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      setTitle("📦 Present Stock Report");
+      renderTable(data, ['Item ID', 'Item Name', 'Quantity', 'Price', 'Remarks']);
+    }
+
+    async function AddedStockReports() {
+      const tableName = TABLES.addeditemstostore;
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('itemid, itemname, quantityadded, price, addeddate, addedtime, addedby, remarks')
+        .order('addedtime', { ascending: false });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      setTitle("➕ Added Stock Report");
+      renderTable(data, ['Item ID', 'Item Name', 'Quantity Added', 'Price', 'Added Date', 'Added Time', 'Added By', 'Remarks']);
+    }
+
+    async function SoldStockReports() {
+      const tableName = TABLES.solditemsfromstore;
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('itemid, itemname, soldquantity, soldprice, solddate, soldtime, soldby, remarks')
+        .order('soldtime', { ascending: false });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      setTitle("🛒 Sold Stock Report");
+      renderTable(data, ['Item ID', 'Item Name', 'Sold Quantity', 'Sold Price', 'Sold Date', 'Sold Time', 'Sold By', 'Remarks']);
+    }
+
+    function GoHome() {
+      window.location.href = 'homepage.html';
+    }
+
+    function DetailedReports() {
+      window.location.href = 'DetailedReports.html';
+    }
+
+    
+
+    function renderTable(data, headers) {
+      if (!data || data.length === 0) {
+        document.getElementById('reportOutput').innerHTML = '<p>No records found.</p>';
+        return;
+      }
+
+      let table = '<table><thead><tr>';
+      headers.forEach(header => table += `<th>${header}</th>`);
+      table += '</tr></thead><tbody>';
+
+      data.forEach(row => {
+        table += '<tr>';
+        Object.values(row).forEach(cell => {
+          table += `<td>${cell !== null ? cell : ''}</td>`;
+        });
+        table += '</tr>';
+      });
+
+      table += '</tbody></table>';
+      document.getElementById('reportOutput').innerHTML = table;
+    }
+
+    function showError(msg) {
+      document.getElementById('reportOutput').innerHTML = `<p style="color:red;">Error: ${msg}</p>`;
+    }
+
+    function setTitle(titleText) {
+      document.getElementById('reportTitle').textContent = titleText;
+    }
+  </script>
+</body>
+</html>

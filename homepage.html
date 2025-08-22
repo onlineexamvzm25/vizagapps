@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>STORE MANAGEMENT SYSTEM</title>
+  <style>
+    /* Reset default margin & padding */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #ece9e6, #ffffff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 40px;
+      color: #333;
+      font-size: 32px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      width: 260px;
+      margin: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    div {
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Store Management System</h2>
+
+  <div>
+    <button id="Config" onclick="configLoad()">Configure Store Items</button>
+  </div>
+
+  <div>
+    <button id="Add" onclick="AddItems()">Add Items to Store</button>
+  </div>
+
+  <div>
+    <button id="Sold" onclick="RemoveItems()">Remove Sold Items</button>
+  </div>
+
+  <div>
+    <button id="Reports" onclick="AdminReports()">Admin Reports</button>
+  </div>
+
+  <div>
+    <button id="Close" onclick="CloseApplication()">Close</button>
+  </div>
+
+  <script>
+    function configLoad() {
+      window.location.href = 'configLoad.html';
+    }
+
+    function AddItems() {
+      window.location.href = 'AddItems.html';
+    }
+
+    function RemoveItems() {
+      window.location.href = 'RemoveItems.html';
+    }
+
+    function AdminReports() {
+      window.location.href = 'AdminReports.html';
+    }
+
+    function CloseApplication() {
+      window.close(); // Corrected function to close window
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Store Management System</title>
+
+ <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="config.js"></script>
+
+
+  <script>
+    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
+
+    window.supabase = supabase.createClient(supabaseUrl, supabaseKey); // ✅ Use window
+  </script>
+   
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 40px;
+      color: #333;
+    }
+
+    h2 {
+      color: #2c3e50;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .timestamp {
+      text-align: right;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+  </style>
+
+    <!-- Load your JS functions -->
+  <script src="storemanage.js"></script>
+  <script window.storeConfigItems = []; ></script>
+  <script window.storeInventoryTableData1 = []; ></script>
+
+  
+
+ 
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const itemSelect = document.getElementById('itemSelect');
+    const priceInput = document.getElementById('aprice');
+  
+    const timeDisplay = document.getElementById('timeDisplay');
+
+    // Set current date and time
+    const now = new Date();
+    const dateString = now.toLocaleDateString();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    timeDisplay.textContent = `🕒 ${dateString} ${timeString}`;
+
+    const tableName = TABLES.storeconfigitems;
+    // Fetch items from Supabase
+    const { data, error } = await supabase.from(tableName).select('*');
+    storeConfigItems = data;
+
+    if (error) {
+      alert('Failed to fetch items: ' + error.message);
+      return;
+    }
+
+    // Add empty default option
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = '-- Select an Item --';
+    itemSelect.appendChild(emptyOption);
+
+    // Populate combo box with item names and attach price in data attribute
+    data.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.itemid;
+      option.textContent = item.itemname;
+      option.setAttribute('data-price', item.itemcost);
+      itemSelect.appendChild(option);
+    });
+
+    // Set default selection
+    itemSelect.selectedIndex = 0;
+
+    // ✅ Handle price setting on item change
+  itemSelect.addEventListener('change', function () {
+  const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+  const price = selectedOption.getAttribute('data-price');
+
+  if (price !== null && price !== '') {
+    priceInput.value = price;
+  } else {
+    priceInput.value = 1;
+  }
+});
+
+  });
+
+  function getItemNameById(itemid) {
+    const item = storeConfigItems.find(item => item.itemid === itemid);
+    return item ? item.itemname : null;
+  }
+
+  async function addItemToStore() {
+    const itemSelect = document.getElementById('itemSelect');
+    const quantityInput = document.getElementById('quantityInput');
+    const selectedItem = itemSelect.value;
+    const quantity = quantityInput.value.trim();
+
+    if (!selectedItem || !quantity) {
+      alert('Please select an item and enter quantity.');
+      return;
+    }
+
+    const itemname = getItemNameById(Number(selectedItem));
+    const itemcost = document.getElementById("aprice").value;
+    const remarks = document.getElementById("aremarks").value;
+    const now = new Date();
+    const dateString = now.toLocaleDateString();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const username = localStorage.getItem('store_username');;
+
+    const tableName = TABLES.storeinventory;
+    const { data, error } = await supabase.from(tableName).select('*');
+    
+    const itemExists = data.some(item => item.itemname === itemname);
+    if (!itemExists) {
+      alert("Item Stock Not Available to Sold...Please Select Other Item");
+      return; // Stop the process
+    }
+    storeInventoryTableData1 = data;
+
+    SoldItemsFromStoreDaily(
+      selectedItem,
+      itemname,
+      quantity,
+      (quantity * itemcost),
+      dateString,
+      timeString,
+      username,
+      remarks
+    );
+
+    // Reset fields
+    itemSelect.selectedIndex = 0;
+    quantityInput.value = '';
+
+    alert('✅ Item(s) Sold from store successfully!');
+  }
+
+  function backToHomepage() {
+    window.location.href = 'homepage.html';
+  }
+</script>
+
+
+
+
+
+<script>
+   function backToHomepage() {
+    window.location.href = 'homepage.html';
+    }
+
+</script>
+
+</head>
+
+<body>
+  <div class="container">
+    <h2>SOLD ITEMS FROM STORE</h2>
+
+    <div class="timestamp" id="timeDisplay">🕒</div>
+
+    <label for="itemSelect">Select Item  Sold from Store:</label>
+    <select id="itemSelect"></select>
+
+    <label for="quantityInput">Enter Quantity of Item:</label>
+    <input type="text" id="quantityInput" placeholder="Enter quantity"> 
+
+    <label for="aprice">Price:</label>
+    <input type="number" id="aprice" value="1" placeholder="price"> <br> <br>
+
+    <label for="remarks">Enter Remarks(optional):</label> 
+    <input type="text" id="aremarks" value="none" placeholder="remarks"> <br>
+
+
+    <button onclick="addItemToStore()"> Sold Item From Store</button> <br> <br> <br>
+    <button onclick="backToHomepage()"> Back To Home Page</button> 
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .report-btn, #homeBtn {
+      padding: 12px 24px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+    }
+    .report-btn:hover,
+    #homeBtn:hover {
+      background: #1e40af;
+    }
+    #homeBtn {
+      margin-left: auto;
+      background: #e5e7eb;
+      color: #111827;
+    }
+    #controls, #results {
+      margin-top: 20px;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    select, input[type="date"] {
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+    label {
+      margin-right: 12px;
+      font-size: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #2563eb;
+      color: #fff;
+    }
+
+  .horizontal-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .horizontal-form label {
+    margin-right: 5px;
+  }
+
+  .horizontal-form input[type="radio"] {
+    margin-left: 10px;
+  }
+
+  .horizontal-form select,
+  .horizontal-form input[type="date"],
+  .horizontal-form button {
+    padding: 4px 6px;
+  }
+
+  .horizontal-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .horizontal-form label {
+    margin-right: 5px;
+  }
+
+  .horizontal-form input[type="radio"] {
+    margin-left: 10px;
+  }
+
+  .horizontal-form select,
+  .horizontal-form input[type="date"],
+  .horizontal-form button {
+    padding: 4px 6px;
+  }
+  .horizontal-form > * {
+  border: 1px dashed #999;
+  padding: 4px;
+}
+
+
