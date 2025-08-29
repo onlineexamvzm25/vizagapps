@@ -55,6 +55,7 @@ if (selectError && selectError.code !== 'PGRST116') {
   } else {
      alert("Item Configured Successfully");
   }
+      setNextItemId();
 }
 
   }

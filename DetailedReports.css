@@ -107,5 +107,25 @@
   border: 1px dashed #999;
   padding: 4px;
 }
+#pdfButtonContainer button {
+  background-color: #2ecc71;
+  color: white;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#pdfButtonContainer button:hover {
+  background-color: #27ae60;
+}
+
+.button-container {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
 
 

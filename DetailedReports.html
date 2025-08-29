@@ -5,6 +5,9 @@
   <title>Reports Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
    <link rel="stylesheet" href="DetailedReports.css">
 </head>
 <body>
@@ -17,8 +20,15 @@
     <button id="homeBtn">Home</button>
   </div>
 
+
   <div id="controls"></div>
-  <div id="results"></div>
+  <div id="results"></div> <br>
+  
+  <div id="pdfButtonContainer" class="button-container" style="display: none;">
+    <button id="downloadPdfBtn">📄 Download PDF</button>
+  </div>
+
+  
 
   <script>
     // Supabase configuration
@@ -51,30 +61,38 @@
 }
 
 
-    // Render table from Supabase query
-    function renderTable(rows) {
-      resultsDiv.innerHTML = '';
-      if (!rows.length) {
-        resultsDiv.textContent = 'No records found for this selection.';
-        return;
-      }
-      const table = document.createElement('table');
-      const header = table.createTHead().insertRow();
-      Object.keys(rows[0]).forEach((col) => {
-        const th = document.createElement('th');
-        th.textContent = col;
-        header.appendChild(th);
-      });
-      const tbody = table.createTBody();
-      rows.forEach((row) => {
-        const tr = tbody.insertRow();
-        Object.values(row).forEach((val) => {
-          const td = tr.insertCell();
-          td.textContent = val;
-        });
-      });
-      resultsDiv.appendChild(table);
-    }
+  function renderTable(rows) {
+  resultsDiv.innerHTML = '';
+  const pdfButton = document.getElementById('pdfButtonContainer');
+
+  if (!rows.length) {
+    resultsDiv.textContent = 'No records found for this selection.';
+    pdfButton.style.display = 'none';
+    return;
+  }
+
+  pdfButton.style.display = 'block';
+
+  const table = document.createElement('table');
+  table.id = 'dataTable'; // 🆕 ID for PDF export
+  const header = table.createTHead().insertRow();
+  Object.keys(rows[0]).forEach((col) => {
+    const th = document.createElement('th');
+    th.textContent = col;
+    header.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+  rows.forEach((row) => {
+    const tr = tbody.insertRow();
+    Object.values(row).forEach((val) => {
+      const td = tr.insertCell();
+      td.textContent = val;
+    });
+  });
+
+  resultsDiv.appendChild(table);
+}
 
   async function handleDateReport() {
   controlsDiv.innerHTML = '';
@@ -434,6 +452,26 @@ dynamicControls.appendChild(dateWrapper);
     document.getElementById('homeBtn').onclick = () => {
       window.location.href = 'AdminReports.html';
     };
+
+
+  document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+  const tableElement = document.getElementById('dataTable');
+  if (!tableElement) return;
+
+  const canvas = await html2canvas(tableElement);
+  const imgData = canvas.toDataURL('image/png');
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+  pdf.save('report.pdf');
+});
+
   </script>
 </body>
 </html>
