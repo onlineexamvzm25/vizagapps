@@ -2,220 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>STORE MANAGEMENT SYSTEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>STOREOFGAMES - Add Product</title>
 
-  <!-- Load Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
   <script src="config.js"></script>
   <script src="storemanage.js"></script>
-
-  <script>
-   function backToHomepage() {
-    window.location.href = 'homepage.html';
-    }
-
-  </script>
-
-    <script type="module">
-    
-    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
-
-    supabase = supabase.createClient(supabaseUrl, supabaseKey); // ✅ Use window
-
-    const excelInput = document.getElementById('excelFileInput');
-    const statusMessage = document.getElementById('statusMessage');
-
-    document.querySelector('label[for="excelFileInput"]').addEventListener('click', () => {
-      excelInput.click();
-    });
-
-    excelInput.addEventListener('change', handleExcelUpload);
-
-    async function handleExcelUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-        let successCount = 0;
-        let errorCount = 0;
-
-        for (const row of jsonData) {
-          const result = await addStoreConfigItem(
-            row.itemid,
-            row.itemname,
-            row.itemtype,
-            row.itemcost,
-            row.remarks
-          );
-
-          if (result) successCount++;
-          else errorCount++;
-        }
-
-        statusMessage.textContent = `Upload Complete. Successful Items : ${successCount}, Failed: ${errorCount}`;
-      };
-
-      reader.readAsArrayBuffer(file);
-    }
-
-    async function addStoreConfigItem(itemID, itemName, itemType, itemCost, remarks) {
-      const tableName = TABLES.storeconfigitems;
-      const { data, error } = await supabase
-        .from(tableName)
-        .insert([
-          {
-            itemid: itemID,
-            itemname: itemName,
-            itemtype: itemType,
-            itemcost: itemCost,
-            remarks: remarks
-          }
-        ]);
-
-      if (error) {
-        console.error('Insert error:', error);
-        return false;
-      }
-      return true;
-    }
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-  
-  // Function to get next item ID
-  async function setNextItemId() {
-    const tableName = TABLES.storeconfigitems;
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('itemid', { count: 'exact' }) // fetch itemid
-      .order('itemid', { ascending: false })
-      .limit(1); // get the max itemid
-
-    if (error) {
-      console.error('Error fetching itemid:', error);
-      return;
-    }
-
-    let nextId = 1; // default
-    if (data.length > 0) {
-      nextId = data[0].itemid + 1;
-    }
-
-    // Set value to input field
-    document.getElementById('itemId').value = nextId;
-  }
-
-  // Run on page load
-  document.addEventListener('DOMContentLoaded', setNextItemId);
-</script>
-
-
-
-
-
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-      margin: 40px;
+      margin: 0; min-height: 100vh; padding: 28px 15px;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif; color: #172033;
+      background: linear-gradient(135deg, #eef3fb, #f8fafc 55%, #e9f0fa);
     }
-
-    h2, h3 {
-      text-align: center;
-      color: #333;
+    .page { width: 100%; max-width: 680px; margin: 0 auto; }
+    .top { text-align: center; margin-bottom: 22px; }
+    .top h1 { margin: 0; color: #172b4d; font-size: clamp(25px, 5vw, 31px); }
+    .top p { margin: 8px 0 0; color: #6b778b; font-size: 14px; }
+    .card {
+      padding: 28px; background: #fff; border: 1px solid #e5ebf3;
+      border-radius: 16px; box-shadow: 0 12px 34px rgba(28,48,80,.09);
     }
-
-    .form-container {
-      background-color: #fff;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    .section-title { margin: 0 0 20px; color: #273852; font-size: 18px; }
+    .field { margin-bottom: 17px; }
+    label { display: block; margin-bottom: 7px; color: #344258; font-size: 14px; font-weight: 650; }
+    input, select {
+      width: 100%; min-height: 45px; padding: 10px 12px;
+      border: 1px solid #ccd5e2; border-radius: 8px; background: #fff;
+      color: #172033; font: inherit; font-size: 15px; outline: none;
     }
-
-    fieldset {
-      border: 2px solid #ccc;
-      padding: 20px;
-      border-radius: 5px;
+    input:focus, select:focus { border-color: #3478d4; box-shadow: 0 0 0 3px rgba(52,120,212,.12); }
+    input[readonly] { background: #f3f6fa; color: #5b687b; }
+    .hint { margin: 6px 0 0; color: #7a8798; font-size: 12px; }
+    .barcode-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
+    .secondary {
+      min-height: 44px; padding: 9px 13px; border: 1px solid #cbd7e6;
+      border-radius: 8px; background: #f4f7fb; color: #24558e;
+      font-size: 13px; font-weight: 650; cursor: pointer; white-space: nowrap;
     }
-
-    .form-group {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
+    .secondary:hover { background: #eaf1fa; }
+    .preview {
+      margin-top: 12px; padding: 12px; min-height: 90px; display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
+      border: 1px dashed #d5deea; border-radius: 8px; background: #fbfcfe;
     }
-
-    .form-group label {
-      flex: 1;
-      min-width: 120px;
-      font-weight: bold;
+    #barcodePreview { max-width: 100%; height: auto; }
+    #barcodePreview:empty { display: none; }
+    #reader-wrap { display: none; margin-top: 14px; padding: 12px; border: 1px solid #dce4ef; border-radius: 10px; }
+    #reader { width: 100%; }
+    .scanner-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .scanner-actions button { flex: 1; }
+    .status { min-height: 20px; margin: 12px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+    .status.error { color: #bd3535; }
+    .status.success { color: #218447; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 23px; }
+    .primary, .back {
+      min-height: 47px; border: 0; border-radius: 8px; color: #fff;
+      font-size: 15px; font-weight: 650; cursor: pointer;
     }
-
-    .form-group input,
-    .form-group select {
-      flex: 2;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    .primary { background: #2fa84f; }
+    .primary:hover { background: #258d41; }
+    .back { background: #64748b; }
+    .back:hover { background: #526176; }
+    button:disabled { opacity: .65; cursor: wait; }
+    .active-note {
+      display: flex; align-items: center; gap: 8px; margin-top: 17px;
+      padding: 11px 13px; border-radius: 8px; background: #eef8f1;
+      color: #267443; font-size: 13px; font-weight: 600;
     }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #2fa84f; }
+    @media (max-width: 560px) {
+      body { padding: 18px 11px; }
+      .card { padding: 21px 17px; }
+      .barcode-row { grid-template-columns: 1fr 1fr; }
+      .barcode-row input { grid-column: 1 / -1; }
+      .actions { grid-template-columns: 1fr; }
     }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
   </style>
 </head>
-
 <body>
+  <main class="page">
+    <header class="top">
+      <h1>STOREOFGAMES</h1>
+      <p>Product configuration</p>
+    </header>
 
-  <h2>ITEM CONFIGURATION PAGE</h2>
-  <h3>CONFIGURE YOUR STORE ITEMS HERE</h3>
+    <section class="card">
+      <h2 class="section-title">Add New Product</h2>
 
-  <div class="form-container">
-    <form id="itemConfigForm">
-      <fieldset>
-        <legend><strong>Item Details</strong></legend>
-
-        <!-- Item ID -->
-        <div class="form-group">
-          <label for="itemId">Item ID:</label>
-          <input type="number" id="itemId" name="itemId" required>
+      <form id="itemConfigForm" onsubmit="ConfigureItemToDB(event)">
+        <div class="field">
+          <label for="itemId">Internal Item ID</label>
+          <input type="number" id="itemId" name="itemId" readonly required>
+          <p class="hint">Generated automatically by STOREOFGAMES.</p>
         </div>
 
-        <!-- Item Name -->
-        <div class="form-group">
-          <label for="itemName">Item Name:</label>
-          <input type="text" id="itemName" name="itemName" required>
+        <div class="field">
+          <label for="barcode">Product Barcode *</label>
+          <div class="barcode-row">
+            <input type="text" id="barcode" name="barcode" placeholder="Enter or scan barcode"
+              autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            <button class="secondary" type="button" id="scanButton">Scan Product</button>
+            <button class="secondary" type="button" id="generateButton">Generate</button>
+          </div>
+          <p class="hint">Enter the manufacturer's barcode, scan it with a camera/scanner, or generate an internal Code 128 barcode.</p>
+          <div class="preview"><svg id="barcodePreview"></svg></div>
+          <div id="reader-wrap">
+            <div id="reader"></div>
+            <div class="scanner-actions">
+              <button class="secondary" type="button" id="stopScanButton">Stop Camera</button>
+            </div>
+          </div>
         </div>
 
-        <!-- Item Type -->
-        <div class="form-group">
-          <label for="itemType">Item Type:</label>
+        <div class="field">
+          <label for="itemName">Product Name *</label>
+          <input type="text" id="itemName" name="itemName" placeholder="Enter product name" required>
+        </div>
+
+        <div class="field">
+          <label for="itemType">Product Type</label>
           <select id="itemType" name="itemType">
             <option value="none" selected>none</option>
             <option value="big">big</option>
@@ -227,42 +138,137 @@
           </select>
         </div>
 
-        <!-- Item Cost -->
-        <div class="form-group">
-          <label for="itemCost">Item Cost:</label>
-          <input type="number" id="itemCost" name="itemCost" value="1" min="1" required>
+        <div class="field">
+          <label for="itemCost">Product Cost *</label>
+          <input type="number" id="itemCost" name="itemCost" value="1" min="1" step="1" required>
         </div>
 
-        <!-- Remarks -->
-        <div class="form-group">
-          <label for="remarks">Remarks:</label>
-          <input type="text" id="remarks" name="remarks">
+        <div class="field">
+          <label for="remarks">Remarks</label>
+          <input type="text" id="remarks" name="remarks" placeholder="Optional remarks">
         </div>
 
-        <!-- Submit -->
-        <button id="configitem" onclick="ConfigureItemToDB(event)">Configure Item</button> <br> <br> <br>
-        
-        <label for="excelFileInput" style="cursor: pointer; color: blue; text-decoration: underline;">
-          Load All Items By Excel File
-        </label>
-        <input type="file" id="excelFileInput" style="display: none;" accept=".xlsx, .xls" />
+        <div class="active-note"><span class="dot"></span> New product status: ACTIVE by default</div>
+        <p id="formStatus" class="status" role="status" aria-live="polite"></p>
 
-        <p id="statusMessage"></p> <br><br>
-        <button onclick="backToHomepage()"> Back To Home Page</button> 
-
-
-      </fieldset>
-    </form>
-  </div>
+        <div class="actions">
+          <button class="primary" id="saveProductButton" type="submit">ADD PRODUCT</button>
+          <button class="back" type="button" onclick="backToHomepage()">BACK TO HOME</button>
+        </div>
+      </form>
+    </section>
+  </main>
 
   <script>
-  document.getElementById('itemName').addEventListener('blur', function () {
-    // Convert only lowercase letters to uppercase
-    this.value = this.value.replace(/[a-z]/g, function(char) {
-      return char.toUpperCase();
-    });
-  });
-</script>
+    function backToHomepage() { window.location.href = 'homepage.html'; }
 
+    const barcodeInput = document.getElementById('barcode');
+    const barcodeSvg = document.getElementById('barcodePreview');
+    const statusElement = document.getElementById('formStatus');
+    let html5QrCode = null;
+
+    function showFormStatus(message, type) {
+      statusElement.textContent = message || '';
+      statusElement.className = 'status ' + (type || '');
+    }
+
+    function renderBarcode(value) {
+      barcodeSvg.innerHTML = '';
+      const clean = String(value || '').trim();
+      if (!clean || !window.JsBarcode) return;
+      try {
+        JsBarcode(barcodeSvg, clean, {
+          format: 'CODE128', lineColor: '#111827',
+          width: 2, height: 55, displayValue: true,
+          font: 'Arial', fontSize: 13, margin: 4
+        });
+      } catch (error) {
+        // Not all manufacturer barcode formats can be previewed as Code 128.
+        // The original scanned/entered value is still retained for saving.
+      }
+    }
+
+    barcodeInput.addEventListener('input', () => renderBarcode(barcodeInput.value));
+    barcodeInput.addEventListener('keydown', event => {
+      // USB scanners commonly append Enter. Keep it from submitting the form.
+      if (event.key === 'Enter') event.preventDefault();
+    });
+
+    document.getElementById('generateButton').addEventListener('click', () => {
+      const id = document.getElementById('itemId').value;
+      if (!id) {
+        showFormStatus('Item ID is not ready yet. Please wait.', 'error');
+        return;
+      }
+      barcodeInput.value = 'STG' + String(id).padStart(6, '0');
+      renderBarcode(barcodeInput.value);
+      showFormStatus('Internal barcode generated. You can still edit it before saving.', 'success');
+    });
+
+    async function stopCameraScanner() {
+      if (!html5QrCode) return;
+      try {
+        if (html5QrCode.isScanning) await html5QrCode.stop();
+        await html5QrCode.clear();
+      } catch (error) {
+        console.warn('Scanner stop:', error);
+      }
+      html5QrCode = null;
+      document.getElementById('reader-wrap').style.display = 'none';
+      document.getElementById('scanButton').disabled = false;
+    }
+
+    document.getElementById('scanButton').addEventListener('click', async () => {
+      if (!window.Html5Qrcode) {
+        showFormStatus('Camera scanner library did not load. You can still use a USB scanner or enter the barcode manually.', 'error');
+        return;
+      }
+      document.getElementById('reader-wrap').style.display = 'block';
+      document.getElementById('scanButton').disabled = true;
+      showFormStatus('Allow camera access and point the camera at the product barcode.', '');
+      try {
+        const formats = [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF
+        ];
+        html5QrCode = new Html5Qrcode('reader', { formatsToSupport: formats, verbose: false });
+        await html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.777 },
+          async decodedText => {
+            barcodeInput.value = decodedText.trim();
+            renderBarcode(barcodeInput.value);
+            showFormStatus('Barcode scanned successfully. Please verify it before saving.', 'success');
+            await stopCameraScanner();
+            barcodeInput.focus();
+          },
+          () => {}
+        );
+      } catch (error) {
+        console.error('Camera scanner error:', error);
+        await stopCameraScanner();
+        showFormStatus('Unable to start camera. Check browser camera permission and use HTTPS, or enter the barcode manually.', 'error');
+      }
+    });
+
+    document.getElementById('stopScanButton').addEventListener('click', stopCameraScanner);
+
+    document.getElementById('itemName').addEventListener('blur', function () {
+      this.value = this.value.toUpperCase();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await setNextItemId();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop().catch(() => {});
+    });
+  </script>
 </body>
 </html>

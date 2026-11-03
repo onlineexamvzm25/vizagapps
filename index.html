@@ -3,105 +3,163 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Store Mnagement Services</title>
+  <meta name="theme-color" content="#f3f6fb" />
+  <title>STOREOFGAMES - Login</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0f2f5;
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 16px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #172033;
+      background: linear-gradient(135deg, #eef3fb 0%, #f8fafc 55%, #e9f0fa 100%);
     }
-    .login-container {
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      width: 300px;
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 38px 34px 30px;
+      background: #fff;
+      border: 1px solid #e8edf5;
+      border-radius: 18px;
+      box-shadow: 0 14px 38px rgba(28, 48, 80, .10);
     }
-    h2 {
+    .brand {
+      margin: 0;
       text-align: center;
-      margin-bottom: 1rem;
+      color: #172b4d;
+      font-size: clamp(25px, 6vw, 30px);
+      font-weight: 750;
+      letter-spacing: .5px;
     }
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 0.6rem;
-      margin: 0.5rem 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+    .subtitle {
+      margin: 10px 0 28px;
+      text-align: center;
+      color: #68758a;
+      font-size: 14px;
+      line-height: 1.5;
     }
-    button {
+    .field { margin-bottom: 17px; }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #344258;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input {
+      display: block;
       width: 100%;
-      padding: 0.6rem;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      margin-top: 1rem;
+      min-height: 48px;
+      padding: 12px 14px;
+      border: 1px solid #cfd7e3;
+      border-radius: 8px;
+      background: #fff;
+      color: #172033;
+      font: inherit;
+      font-size: 16px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus {
+      border-color: #3478d4;
+      box-shadow: 0 0 0 3px rgba(52, 120, 212, .13);
+    }
+    .login-button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 7px;
+      border: 0;
+      border-radius: 8px;
+      background: #2fa84f;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 650;
       cursor: pointer;
+      transition: background .2s, transform .15s;
     }
-    button:hover {
-      background-color: #45a049;
-    }
-    .error {
-      color: red;
-      margin-top: 0.5rem;
+    .login-button:hover { background: #258d41; }
+    .login-button:active { transform: translateY(1px); }
+    .login-button:disabled { opacity: .7; cursor: wait; }
+    .register-link {
+      margin: 22px 0 0;
       text-align: center;
+      color: #59677d;
+      font-size: 14px;
+    }
+    .register-link a {
+      color: #245fa8;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .register-link a:hover { text-decoration: underline; }
+    .error {
+      min-height: 18px;
+      margin-top: 13px;
+      color: #c0392b;
+      text-align: center;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 420px) {
+      .login-card { padding: 32px 23px 25px; border-radius: 15px; }
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2>User Login</h2>
+  <main class="login-card">
+    <h1 class="brand">STOREOFGAMES</h1>
+    <p class="subtitle">Sign in to manage your store</p>
+
     <form id="login-form">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <button type="submit">Login</button>
-      <div class="error" id="error-msg"></div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" placeholder="Enter 10-digit phone number"
+          autocomplete="username" inputmode="numeric" maxlength="13" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password"
+          autocomplete="current-password" required />
+      </div>
+      <button class="login-button" type="submit">Login</button>
+      <div class="error" id="error-msg" role="alert" aria-live="polite"></div>
     </form>
-  </div>
 
-  <script src="config.js"></script>
-  <!-- Include Supabase JS SDK -->
+    <p class="register-link">First time here? <a href="register.html">Create your password</a></p>
+  </main>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <script src="auth.js"></script>
   <script>
-    // Initialize Supabase
-    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
-
-    supabase = supabase.createClient(supabaseUrl, supabaseKey); // ✅ Use window
-
-
     const loginForm = document.getElementById('login-form');
     const errorMsg = document.getElementById('error-msg');
+    const loginButton = loginForm.querySelector('button[type="submit"]');
 
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorMsg.style.color = '#c0392b';
+      errorMsg.textContent = '';
 
-      const password = document.getElementById('password').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      loginButton.disabled = true;
+      loginButton.textContent = 'Signing in...';
 
-      const tableName = TABLES.storeusers;
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('password')
-        .eq('password', password);
-
-      if (error) {
-        errorMsg.textContent = 'Invalid User..!';
-        console.error(error);
-      } else if (data.length > 0) {
-        // Password match found
-        const username = document.getElementById('username').value.trim(); // ✅ Correct
-        localStorage.setItem('store_username', username); // Store username
-        errorMsg.style.color = 'green';
+      try {
+        await STORE_AUTH.signIn(phone, password);
+        errorMsg.style.color = '#258d41';
         errorMsg.textContent = 'Login successful!';
-        // Redirect or load dashboard here
-     window.location.href = 'homepage.html';
-      } else {
-        errorMsg.textContent = 'Invalid Password.';
+        window.location.href = 'homepage.html';
+      } catch (error) {
+        console.error('Login failed:', error);
+        errorMsg.textContent = error.message || 'Invalid phone number or password.';
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Login';
       }
     });
   </script>

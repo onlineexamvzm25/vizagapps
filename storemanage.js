@@ -1,64 +1,138 @@
 let AddedItemAvailable = 1;
 let ModifiedQuanity = 0;
 
-function ConfigureItemToDB(event) {
-    event.preventDefault(); // Prevents form from submitting
 
-    const itemid = document.getElementById("itemId").value;
-    const itemname = document.getElementById("itemName").value;
-    const itemtype = document.getElementById("itemType").value;
-    const itemcost = document.getElementById("itemCost").value;
-    const remarks = document.getElementById("remarks").value;
 
-    addStoreConfigItem(itemid, itemname, itemtype, itemcost, remarks);
+async function setNextItemId() {
+    try {
+        const db = window.storeSupabase || window.supabase;
 
-    // Reset form to initial state
-    document.getElementById("itemConfigForm").reset();
+        if (!db) {
+            throw new Error("Supabase client is not available.");
+        }
+
+        const { data, error } = await db
+            .from(TABLES.storeconfigitems)
+            .select("itemid")
+            .order("itemid", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        const nextId = data ? Number(data.itemid) + 1 : 1;
+
+        document.getElementById("itemId").value = nextId;
+
+    } catch (error) {
+        console.error("Error generating next Item ID:", error);
+        alert("Unable to generate the next Item ID: " + error.message);
+    }
 }
 
+// Phase 2: Add a product to the product master.
+// Barcode uniqueness is enforced by the database unique index, not only by this page.
+async function ConfigureItemToDB(event) {
+  event.preventDefault();
 
-  async function addStoreConfigItem(itemID, itemName, itemType, itemCost, remarks) {
+  const itemID = Number(document.getElementById("itemId").value);
+  const itemName = document.getElementById("itemName").value.trim();
+  const itemType = document.getElementById("itemType").value;
+  const itemCost = Number(document.getElementById("itemCost").value);
+  const barcode = document.getElementById("barcode").value.trim();
+  const remarks = document.getElementById("remarks").value.trim();
+  const button = document.getElementById("saveProductButton");
 
-    const tableName = TABLES.storeconfigitems;
-    // First, check if the itemid already exists
-const { data: existingItem, error: selectError } = await supabase
-  .from(tableName)
-  .select('itemid')
-  .eq('itemid', itemID)
-  .single(); // since itemid is a primary key, it should return at most one row
+  if (!Number.isInteger(itemID) || itemID <= 0) {
+    alert("A valid Item ID has not been generated. Refresh the page and try again.");
+    return;
+  }
+  if (!barcode) {
+    alert("Please enter, scan, or generate a product barcode.");
+    document.getElementById("barcode").focus();
+    return;
+  }
+  if (!itemName) {
+    alert("Please enter the product name.");
+    document.getElementById("itemName").focus();
+    return;
+  }
+  if (!Number.isInteger(itemCost) || itemCost < 1) {
+    alert("Please enter a valid product cost (whole number greater than zero).");
+    document.getElementById("itemCost").focus();
+    return;
+  }
 
-if (selectError && selectError.code !== 'PGRST116') {
-  // Handle unexpected errors (PGRST116 = No rows found, which is okay)
-  console.error('Error checking for existing item:', selectError.message);
-  alert('An error occurred while checking the item ID.');
-} else if (existingItem) {
-  // itemid already exists
-  alert('Item ID already exists. Please Enter Another Item ID.');
-} else {
-  const tableName = TABLES.storeconfigitems;
-  // itemid does not exist, safe to insert
-  const { data, error } = await supabase
-    .from(tableName)
-    .insert([
-      {
-        itemid: itemID,
-        itemname: itemName,
-        itemtype: itemType,
-        itemcost: itemCost,
-        remarks: remarks
+  button.disabled = true;
+  button.textContent = "SAVING...";
+
+  try {
+    const result = await addStoreConfigItem(
+      itemID, barcode, itemName, itemType, itemCost, remarks
+    );
+
+    if (!result.success) {
+      if (result.code === "23505") {
+        const detail = `${result.message || ""} ${result.details || ""}`.toLowerCase();
+        if (detail.includes("barcode") || detail.includes("idx_storeconfigitems_barcode_unique")) {
+          throw new Error("This barcode is already assigned to another product. Please scan or enter a different barcode.");
+        }
+        if (detail.includes("itemid") || detail.includes("storeconfigitems_pkey")) {
+          throw new Error("This Item ID is already in use. Refresh the page and try again.");
+        }
       }
-    ]);
+      throw new Error(result.message || "Could not save the product.");
+    }
+
+    document.getElementById("itemConfigForm").reset();
+    document.getElementById("itemCost").value = "1";
+    document.getElementById("barcodePreview").innerHTML = "";
+    if (typeof showFormStatus === "function") {
+      showFormStatus("Product added successfully. You can add the next product.", "success");
+    }
+    await setNextItemId();
+  } catch (error) {
+    console.error("Configure product error:", error);
+    if (typeof showFormStatus === "function") {
+      showFormStatus(error.message || "Failed to add product.", "error");
+    } else {
+      alert(error.message || "Failed to add product.");
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = "ADD PRODUCT";
+  }
+}
+
+async function addStoreConfigItem(itemID, barcode, itemName, itemType, itemCost, remarks) {
+  const db = window.storeSupabase || window.supabase;
+  if (!db || typeof db.from !== "function") {
+    return { success: false, message: "Supabase client is not ready. Refresh the page." };
+  }
+
+  const { error } = await db
+    .from(TABLES.storeconfigitems)
+    .insert({
+      itemid: itemID,
+      barcode: barcode,
+      itemname: itemName,
+      itemtype: itemType,
+      itemcost: itemCost,
+      remarks: remarks || null,
+      is_active: true
+    });
 
   if (error) {
-    console.error('Insert error:', error.message);
-    alert('Failed to configure an item. Please try again.');
-  } else {
-     alert("Item Configured Successfully");
+    console.error("Product insert error:", error);
+    return {
+      success: false,
+      code: error.code,
+      message: error.message,
+      details: error.details
+    };
   }
-      setNextItemId();
+  return { success: true };
 }
-
-  }
 
 // storeinventory table
 async function addStoreInventory(itemID, itemName, quantity, price, remarks) {

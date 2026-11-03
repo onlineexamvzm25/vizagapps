@@ -2,106 +2,184 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>STORE MANAGEMENT SYSTEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>STOREOFGAMES</title>
   <style>
-    /* Reset default margin & padding */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #ece9e6, #ffffff);
+      min-height: 100vh;
+      padding: 28px 16px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #172033;
+      background: linear-gradient(135deg, #eef3fb 0%, #f8fafc 55%, #e9f0fa 100%);
     }
-
-    h2 {
-      margin-bottom: 40px;
-      color: #333;
-      font-size: 32px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .home-card {
+      width: 100%;
+      max-width: 590px;
+      padding: 34px;
+      background: #fff;
+      border: 1px solid #e8edf5;
+      border-radius: 18px;
+      box-shadow: 0 14px 38px rgba(28, 48, 80, .10);
     }
-
-    button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s, transform 0.2s;
-      width: 260px;
-      margin: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    button:hover {
-      background-color: #0056b3;
-      transform: translateY(-2px);
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
-
-    div {
+    .brand {
       text-align: center;
+      color: #172b4d;
+      font-size: clamp(27px, 5vw, 32px);
+      font-weight: 750;
+      letter-spacing: .6px;
+    }
+    .tagline {
+      margin-top: 7px;
+      text-align: center;
+      color: #7a8799;
+      font-size: 14px;
+    }
+    .account-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 25px 0 28px;
+      padding: 13px;
+      background: #f5f8fc;
+      border: 1px solid #e8edf5;
+      border-radius: 11px;
+    }
+    #loggedInUser {
+      margin-right: auto;
+      color: #43516a;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .small-button {
+      min-height: 39px;
+      padding: 9px 15px;
+      border: 0;
+      border-radius: 7px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .2s, transform .15s;
+    }
+    .small-button:hover, .action-button:hover { filter: brightness(.94); }
+    .small-button:active, .action-button:active { transform: translateY(1px); }
+    #changePasswordButton { background: #2878d0; }
+    #logoutButton { background: #c44747; }
+    .section-title {
+      margin: 0 0 15px;
+      color: #43516a;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+    .action-button {
+      width: 100%;
+      min-height: 58px;
+      padding: 13px 15px;
+      border: 0;
+      border-radius: 9px;
+      background: #1675dc;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      cursor: pointer;
+      box-shadow: 0 4px 9px rgba(22, 117, 220, .16);
+      transition: filter .2s, transform .15s;
+    }
+    .close-button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 13px;
+      border: 1px solid #d8e0eb;
+      border-radius: 9px;
+      background: #f7f9fc;
+      color: #536176;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .close-button:hover { background: #edf2f8; }
+    button:focus-visible {
+      outline: 3px solid rgba(39, 119, 210, .28);
+      outline-offset: 2px;
+    }
+    @media (max-width: 520px) {
+      .home-card { padding: 28px 21px 22px; border-radius: 15px; }
+      .account-bar { justify-content: center; }
+      #loggedInUser { flex-basis: 100%; margin: 0 0 3px; text-align: center; }
+      .small-button { flex: 1; }
+      .menu-grid { grid-template-columns: 1fr; gap: 11px; }
+      .action-button { min-height: 53px; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
 </head>
-
 <body>
-  <h2>Store Management System</h2>
+  <main class="home-card">
+    <header>
+      <h1 class="brand">STOREOFGAMES</h1>
+      <p class="tagline">Store management dashboard</p>
+    </header>
 
-  <div>
-    <button id="Config" onclick="configLoad()">Configure Store Items</button>
-  </div>
+    <section class="account-bar" aria-label="Account options">
+      <span id="loggedInUser"></span>
+      <button id="changePasswordButton" class="small-button" type="button">Change Password</button>
+      <button id="logoutButton" class="small-button" type="button">Logout</button>
+    </section>
 
-  <div>
-    <button id="Add" onclick="AddItems()">Add Items to Store</button>
-  </div>
-
-  <div>
-    <button id="Sold" onclick="RemoveItems()">Remove Sold Items</button>
-  </div>
-
-  <div>
-    <button id="Reports" onclick="AdminReports()">Admin Reports</button>
-  </div>
-
-  <div>
-    <button id="Close" onclick="CloseApplication()">Close</button>
-  </div>
+    <section aria-label="Store operations">
+      <h2 class="section-title">Store Operations</h2>
+      <div class="menu-grid">
+        <button id="Config" class="action-button" onclick="configLoad()">Configure Store Items</button>
+        <button id="Add" class="action-button" onclick="AddItems()">Add Items to Store</button>
+        <button id="Sold" class="action-button" onclick="RemoveItems()">Remove Sold Items</button>
+        <button id="Reports" class="action-button" onclick="AdminReports()">Admin Reports</button>
+      </div>
+      <button id="Close" class="close-button" onclick="CloseApplication()">Close</button>
+    </section>
+  </main>
 
   <script>
-    function configLoad() {
-      window.location.href = 'configLoad.html';
-    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const session = await STORE_AUTH.requireSession();
+      if (session) {
+        document.getElementById('loggedInUser').textContent =
+          'Signed in: ' + (localStorage.getItem('store_username') || session.user.phone || 'User');
+      }
+      document.getElementById('changePasswordButton').addEventListener('click', () => {
+        window.location.href = 'updatepassword.html';
+      });
+      document.getElementById('logoutButton').addEventListener('click', async () => {
+        const button = document.getElementById('logoutButton');
+        button.disabled = true;
+        button.textContent = 'Logging out...';
+        try { await STORE_AUTH.signOut(); }
+        catch (error) {
+          alert('Logout failed: ' + error.message);
+          button.disabled = false;
+          button.textContent = 'Logout';
+        }
+      });
+    });
 
-    function AddItems() {
-      window.location.href = 'AddItems.html';
-    }
-
-    function RemoveItems() {
-      window.location.href = 'RemoveItems.html';
-    }
-
-    function AdminReports() {
-      window.location.href = 'AdminReports.html';
-    }
-
-    function CloseApplication() {
-      window.close(); // Corrected function to close window
-    }
+    function configLoad() { window.location.href = 'configLoad.html'; }
+    function AddItems() { window.location.href = 'AddItems.html'; }
+    function RemoveItems() { window.location.href = 'RemoveItems.html'; }
+    function AdminReports() { window.location.href = 'AdminReports.html'; }
+    function CloseApplication() { window.close(); }
   </script>
 </body>
 </html>
