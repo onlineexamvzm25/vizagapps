@@ -1,0 +1,1175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>STOREOFGAMES - Manage Products</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="config.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 25px 16px;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: #172033;
+      background: linear-gradient(135deg, #eef3fb, #f8fafc 55%, #e9f0fa);
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1250px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #172b4d;
+      font-size: clamp(25px, 4vw, 31px);
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: #718096;
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .home-btn { background: #64748b; }
+    .refresh-btn { background: #2878d0; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin: 20px 0;
+    }
+
+    .summary-card {
+      padding: 17px 19px;
+      background: #fff;
+      border: 1px solid #e5ebf3;
+      border-radius: 12px;
+      box-shadow: 0 7px 22px rgba(28,48,80,.06);
+    }
+
+    .summary-label {
+      color: #6b778b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .summary-value {
+      margin-top: 7px;
+      color: #172b4d;
+      font-size: 27px;
+      font-weight: 750;
+    }
+
+    .panel {
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #e5ebf3;
+      border-radius: 14px;
+      box-shadow: 0 9px 28px rgba(28,48,80,.07);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(145px, 1fr));
+      gap: 11px;
+      margin-bottom: 16px;
+    }
+
+    .filters input,
+    .filters select {
+      width: 100%;
+      min-height: 43px;
+      padding: 9px 11px;
+      border: 1px solid #ccd5e2;
+      border-radius: 8px;
+      color: #172033;
+      background: #fff;
+      outline: none;
+    }
+
+    .filters input:focus,
+    .filters select:focus {
+      border-color: #3478d4;
+      box-shadow: 0 0 0 3px rgba(52,120,212,.12);
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #e5ebf3;
+      border-radius: 9px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 940px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 11px;
+      border-bottom: 1px solid #edf0f5;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: #f4f7fb;
+      color: #46556d;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    td {
+      color: #344258;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: #f9fbfe;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .barcode {
+      font-family: Consolas, monospace;
+      white-space: nowrap;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: .2px;
+    }
+
+    .active {
+      color: #237344;
+      background: #eaf7ee;
+    }
+
+    .inactive {
+      color: #a33b3b;
+      background: #fff0f0;
+    }
+
+    .empty {
+      padding: 30px 15px;
+      text-align: center;
+      color: #78869a;
+    }
+
+    .message {
+      min-height: 22px;
+      margin: 12px 0;
+      color: #66758a;
+      font-size: 13px;
+    }
+
+    .message.error {
+      color: #bd3535;
+    }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .page-info {
+      color: #66758a;
+      font-size: 13px;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-controls button {
+      min-width: 82px;
+      background: #2878d0;
+    }
+
+    .page-controls button:disabled {
+      background: #aab6c5;
+    }
+
+    /* Product edit modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(15, 23, 42, .55);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 520px;
+  margin: 35px auto;
+  padding: 23px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 15px 45px rgba(0,0,0,.2);
+}
+
+.modal-content h2 {
+  margin: 0 0 18px;
+  color: #172b4d;
+}
+
+.modal-content label {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #46556d;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccd5e2;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.modal-content textarea {
+  min-height: 75px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  flex: 1;
+}
+
+.save-edit-btn {
+  background: #16834a;
+}
+
+.cancel-edit-btn {
+  background: #64748b;
+}
+
+.action-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  margin: 2px;
+  font-size: 12px;
+}
+
+.edit-btn {
+  background: #2878d0;
+}
+
+.activate-btn {
+  background: #16834a;
+}
+
+.deactivate-btn {
+  background: #c44747;
+}
+
+    @media (max-width: 850px) {
+      .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 17px 10px;
+      }
+
+      .summary {
+        gap: 8px;
+      }
+
+      .summary-card {
+        padding: 13px 11px;
+      }
+
+      .summary-value {
+        font-size: 23px;
+      }
+
+      .panel {
+        padding: 13px;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
+      .header-actions button {
+        flex: 1;
+      }
+
+      .pagination {
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="page">
+
+    <header class="header">
+      <div>
+        <h1>STOREOFGAMES</h1>
+        <p class="subtitle">Product listing and search</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="refresh-btn" id="refreshButton" type="button">
+          Refresh
+        </button>
+
+        <button class="home-btn" type="button"
+          onclick="window.location.href='homepage.html'">
+          Back to Home
+        </button>
+      </div>
+    </header>
+
+    <!-- Product Summary -->
+
+    <section class="summary" aria-label="Product summary">
+
+      <div class="summary-card">
+        <div class="summary-label">Total Products</div>
+        <div class="summary-value" id="totalCount">—</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Active Products</div>
+        <div class="summary-value" id="activeCount">—</div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Inactive Products</div>
+        <div class="summary-value" id="inactiveCount">—</div>
+      </div>
+
+    </section>
+
+    <!-- Product Listing -->
+
+    <section class="panel">
+
+      <div class="filters">
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search Item ID, barcode or product name"
+          autocomplete="off">
+
+        <select id="typeFilter" aria-label="Filter by product type">
+          <option value="">All Product Types</option>
+          <option value="none">none</option>
+          <option value="big">big</option>
+          <option value="medium">medium</option>
+          <option value="small">small</option>
+          <option value="type1">type1</option>
+          <option value="type2">type2</option>
+          <option value="type3">type3</option>
+        </select>
+
+        <select id="statusFilter" aria-label="Filter by product status">
+          <option value="">All Statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+
+        <select id="pageSize" aria-label="Products per page">
+          <option value="10" selected>10 per page</option>
+          <option value="20">20 per page</option>
+          <option value="50">50 per page</option>
+        </select>
+
+      </div>
+
+      <div id="message" class="message" role="status" aria-live="polite">
+        Loading products...
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Item ID</th>
+              <th>Barcode</th>
+              <th>Product Name</th>
+              <th>Product Type</th>
+              <th>Cost</th>
+              <th>Unit</th>
+              <th>Remarks</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="productRows">
+            <tr>
+              <td colspan="9" class="empty">Loading products...</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+      <!-- Pagination -->
+
+      <div class="pagination">
+
+        <div class="page-info" id="pageInfo">—</div>
+
+        <div class="page-controls">
+          <button type="button" id="previousButton" disabled>
+            Previous
+          </button>
+
+          <button type="button" id="nextButton" disabled>
+            Next
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Edit Product Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+
+    <h2>Edit Product</h2>
+
+    <form id="editProductForm" onsubmit="saveProductChanges(event)">
+
+      <label for="editItemId">Item ID</label>
+      <input type="text" id="editItemId" readonly>
+
+      <label for="editBarcode">Barcode *</label>
+      <input type="text" id="editBarcode" required>
+
+      <label for="editItemName">Product Name *</label>
+      <input type="text" id="editItemName" required>
+
+      <label for="editItemType">Product Type</label>
+      <select id="editItemType">
+        <option value="none">none</option>
+        <option value="big">big</option>
+        <option value="medium">medium</option>
+        <option value="small">small</option>
+        <option value="type1">type1</option>
+        <option value="type2">type2</option>
+        <option value="type3">type3</option>
+      </select>
+
+      <label for="editItemCost">Product Cost *</label>
+      <input type="number" id="editItemCost" min="1" step="1" required>
+
+      <label for="editUnit">Product Unit *</label>
+      <select id="editUnit">
+        <option value="pcs">Count (pcs)</option>
+        <option value="kg">Kilograms (kg)</option>
+        <option value="g">Grams (g)</option>
+        <option value="L">Litres (L)</option>
+        <option value="ml">Millilitres (ml)</option>
+      </select>
+
+    <label for="editStatus">Product Status *</label>
+    <select id="editStatus" required>
+    <option value="true">Active</option>
+    <option value="false">Inactive</option>
+    </select>
+
+      <label for="editRemarks">Remarks</label>
+      <textarea id="editRemarks"></textarea>
+
+      <div class="modal-actions">
+        <button type="submit" class="save-edit-btn" id="saveEditButton">
+          Save Changes
+        </button>
+
+        <button type="button" class="cancel-edit-btn"
+          onclick="closeEditModal()">
+          Cancel
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+  </main>
+
+  <script>
+
+    const state = {
+      page: 0,
+      pageSize: 10,
+      totalFiltered: 0,
+      searchTimer: null,
+      loading: false
+    };
+
+    const rowsElement = document.getElementById('productRows');
+    const messageElement = document.getElementById('message');
+
+
+    function setMessage(message, isError) {
+      messageElement.textContent = message || '';
+      messageElement.className =
+        'message' + (isError ? ' error' : '');
+    }
+
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+
+    function formatCost(value) {
+      if (value === null || value === undefined || value === '') {
+        return '—';
+      }
+
+      return escapeHtml(value);
+    }
+
+
+    // Load total, active and inactive product counts
+
+    async function loadSummary(db) {
+
+      const [allResult, activeResult, inactiveResult] =
+        await Promise.all([
+
+          db.from(TABLES.storeconfigitems)
+            .select('itemid', { count: 'exact', head: true }),
+
+          db.from(TABLES.storeconfigitems)
+            .select('itemid', { count: 'exact', head: true })
+            .eq('is_active', true),
+
+          db.from(TABLES.storeconfigitems)
+            .select('itemid', { count: 'exact', head: true })
+            .eq('is_active', false)
+
+        ]);
+
+      const error =
+        allResult.error ||
+        activeResult.error ||
+        inactiveResult.error;
+
+      if (error) throw error;
+
+      document.getElementById('totalCount').textContent =
+        allResult.count ?? 0;
+
+      document.getElementById('activeCount').textContent =
+        activeResult.count ?? 0;
+
+      document.getElementById('inactiveCount').textContent =
+        inactiveResult.count ?? 0;
+    }
+
+
+    // Prepare search conditions
+
+    function buildSearchFilter(query) {
+
+      const safe = query.replace(/[(),"'\\]/g, ' ').trim();
+
+      if (!safe) return null;
+
+      const parts = [
+        `itemname.ilike.%${safe}%`,
+        `barcode.ilike.%${safe}%`
+      ];
+
+      if (/^\d+$/.test(safe)) {
+        parts.push(`itemid.eq.${safe}`);
+      }
+
+      return parts.join(',');
+    }
+
+
+    // Main product loading function
+
+    async function loadProducts() {
+
+      if (state.loading) return;
+
+      state.loading = true;
+
+      document.getElementById('refreshButton').disabled = true;
+      document.getElementById('previousButton').disabled = true;
+      document.getElementById('nextButton').disabled = true;
+
+      setMessage('Loading products...', false);
+
+      try {
+
+        const db =
+          window.storeSupabase ||
+          (window.STORE_AUTH && window.STORE_AUTH.client);
+
+        if (!db) {
+          throw new Error(
+            'Supabase client is not available. Please refresh the page.'
+          );
+        }
+
+        const search =
+          document.getElementById('searchInput').value.trim();
+
+        const type =
+          document.getElementById('typeFilter').value;
+
+        const status =
+          document.getElementById('statusFilter').value;
+
+
+        let query = db
+          .from(TABLES.storeconfigitems)
+          .select(
+            'itemid, barcode, itemname, itemtype, itemcost, unit, remarks, is_active',
+            { count: 'exact' }
+          );
+
+
+        const searchFilter = buildSearchFilter(search);
+
+        if (searchFilter) {
+          query = query.or(searchFilter);
+        }
+
+        if (type) {
+          query = query.eq('itemtype', type);
+        }
+
+        if (status !== '') {
+          query = query.eq('is_active', status === 'true');
+        }
+
+
+        const start = state.page * state.pageSize;
+        const end = start + state.pageSize - 1;
+
+
+        const [listResult] = await Promise.all([
+
+          query
+            .order('itemid', { ascending: false })
+            .range(start, end),
+
+          loadSummary(db)
+
+        ]);
+
+
+        if (listResult.error) {
+          throw listResult.error;
+        }
+
+
+        state.totalFiltered = listResult.count ?? 0;
+
+        const products = listResult.data || [];
+
+
+        // Display products
+
+        if (products.length === 0) {
+
+          rowsElement.innerHTML = `
+            <tr>
+              <td colspan="8" class="empty">
+                No products found.
+              </td>
+            </tr>
+          `;
+
+        } else {
+
+          rowsElement.innerHTML = products.map(product => {
+
+            const isActive = product.is_active === true;
+
+            return `
+              <tr>
+                <td>${escapeHtml(product.itemid)}</td>
+
+                <td class="barcode">
+                  ${escapeHtml(product.barcode || '—')}
+                </td>
+
+                <td>
+                  ${escapeHtml(product.itemname || '—')}
+                </td>
+
+                <td>
+                  ${escapeHtml(product.itemtype || '—')}
+                </td>
+
+                <td>
+                  ${formatCost(product.itemcost)}
+                </td>
+
+                <td>
+                  ${escapeHtml(product.unit || 'pcs')}
+                </td>
+
+                <td>
+                  ${escapeHtml(product.remarks || '—')}
+                </td>
+
+                <td>
+                <span class="status-pill ${isActive ? 'active' : 'inactive'}">
+                    ${isActive ? 'ACTIVE' : 'INACTIVE'}
+                </span>
+                </td>
+
+                <td>
+                <button type="button"
+                    class="action-btn edit-btn"
+                    onclick="editProduct(${Number(product.itemid)})">
+                    Edit
+                </button>
+                </td>
+              </tr>
+            `;
+
+          }).join('');
+
+        }
+
+
+        // Pagination information
+
+        const first =
+          state.totalFiltered === 0 ? 0 : start + 1;
+
+        const last =
+          Math.min(start + products.length, state.totalFiltered);
+
+        const totalPages =
+          Math.max(1, Math.ceil(state.totalFiltered / state.pageSize));
+
+
+        document.getElementById('pageInfo').textContent =
+          `Showing ${first}–${last} of ${state.totalFiltered} matching products · Page ${state.page + 1} of ${totalPages}`;
+
+
+        document.getElementById('previousButton').disabled =
+          state.page <= 0;
+
+        document.getElementById('nextButton').disabled =
+          (state.page + 1) >= totalPages;
+
+
+        setMessage(
+          `Loaded ${products.length} product(s) on this page.`,
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error('Manage products load error:', error);
+
+        rowsElement.innerHTML = `
+          <tr>
+            <td colspan="8" class="empty">
+              Unable to load products.
+            </td>
+          </tr>
+        `;
+
+        setMessage(
+          error.message ||
+          'Unable to load products. Check your connection and database permissions.',
+          true
+        );
+
+        document.getElementById('pageInfo').textContent = '—';
+
+      } finally {
+
+        state.loading = false;
+
+        document.getElementById('refreshButton').disabled = false;
+
+      }
+
+    }
+
+
+    // Currently selected product being edited
+let editingProductId = null;
+
+
+// Open the edit window and load product details
+async function editProduct(itemId) {
+
+  const db = window.storeSupabase || STORE_AUTH.client;
+
+  const { data, error } = await db
+    .from(TABLES.storeconfigitems)
+    .select('*')
+    .eq('itemid', itemId)
+    .maybeSingle();
+
+  if (error || !data) {
+    alert('Unable to load product details: ' +
+      (error?.message || 'Product not found.'));
+    return;
+  }
+
+  editingProductId = data.itemid;
+
+  document.getElementById('editItemId').value = data.itemid;
+  document.getElementById('editBarcode').value = data.barcode || '';
+  document.getElementById('editItemName').value = data.itemname || '';
+  document.getElementById('editItemType').value = data.itemtype || 'none';
+  document.getElementById('editItemCost').value = data.itemcost || 1;
+  document.getElementById('editUnit').value = data.unit || 'pcs';
+  document.getElementById('editStatus').value = String(data.is_active === true);
+  document.getElementById('editRemarks').value = data.remarks || '';
+
+  document.getElementById('editModal').style.display = 'block';
+}
+
+
+// Close edit window
+function closeEditModal() {
+
+  document.getElementById('editModal').style.display = 'none';
+
+  document.getElementById('editProductForm').reset();
+
+  editingProductId = null;
+}
+
+
+// Save edited product details
+async function saveProductChanges(event) {
+
+  event.preventDefault();
+
+  if (editingProductId === null) {
+    alert('No product selected.');
+    return;
+  }
+
+  const db = window.storeSupabase || STORE_AUTH.client;
+
+  const barcode = document.getElementById('editBarcode').value.trim();
+  const itemname = document.getElementById('editItemName').value.trim();
+  const itemtype = document.getElementById('editItemType').value;
+  const itemcost = Number(document.getElementById('editItemCost').value);
+  const unit = document.getElementById('editUnit').value;
+  const is_active = document.getElementById('editStatus').value === 'true';
+  const remarks = document.getElementById('editRemarks').value.trim();
+
+  if (!barcode || !itemname) {
+    alert('Barcode and Product Name are required.');
+    return;
+  }
+
+  if (!Number.isInteger(itemcost) || itemcost < 1) {
+    alert('Please enter a valid whole-number cost greater than zero.');
+    return;
+  }
+
+  const button = document.getElementById('saveEditButton');
+
+  button.disabled = true;
+  button.textContent = 'Saving...';
+
+  if (!is_active) {
+  const confirmed = confirm(
+    'Are you sure you want to make this product INACTIVE?\n\n' +
+    'It will disappear from Add Items and Remove Sold Items dropdowns.\n' +
+    'Existing stock and transaction history will be preserved.'
+  );
+
+  if (!confirmed) return;
+}
+
+  try {
+
+    const { error } = await db
+      .from(TABLES.storeconfigitems)
+      .update({
+        barcode: barcode,
+        itemname: itemname,
+        itemtype: itemtype,
+        itemcost: itemcost,
+        unit: unit,
+        is_active: is_active,
+        remarks: remarks || null
+      })
+      .eq('itemid', editingProductId);
+
+    if (error) {
+
+      if (error.code === '23505') {
+        throw new Error(
+          'This barcode is already assigned to another product.'
+        );
+      }
+
+      throw error;
+    }
+
+    alert('Product details updated successfully.');
+
+    closeEditModal();
+
+    await loadProducts();
+
+  } catch (error) {
+
+    console.error('Product update error:', error);
+
+    alert('Unable to update product: ' + error.message);
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = 'Save Changes';
+
+  }
+}
+
+
+        // Activate or deactivate a product
+        async function toggleProductStatus(itemId, currentlyActive) {
+
+        const newStatus = !currentlyActive;
+
+        const action = newStatus ? 'activate' : 'deactivate';
+
+        const message = newStatus
+            ? 'Are you sure you want to activate this product?'
+            : 'Are you sure you want to deactivate this product? It will no longer appear in the Add Items or Remove Sold Items dropdowns. Existing stock and transaction history will be preserved.';
+
+        if (!confirm(message)) {
+            return;
+        }
+
+        const db = window.storeSupabase || STORE_AUTH.client;
+
+        try {
+
+            const { error } = await db
+            .from(TABLES.storeconfigitems)
+            .update({ is_active: newStatus })
+            .eq('itemid', itemId);
+
+            if (error) {
+            throw error;
+            }
+
+            alert('Product ' + action + 'd successfully.');
+
+            await loadProducts();
+
+        } catch (error) {
+
+            console.error('Product status update error:', error);
+
+            alert('Unable to change product status: ' + error.message);
+
+        }
+        }
+
+
+    // Page initialization and event handlers
+
+    document.addEventListener('DOMContentLoaded', async () => {
+
+      const session = await STORE_AUTH.requireSession();
+
+      if (!session) return;
+
+
+      // Search
+
+      document.getElementById('searchInput')
+        .addEventListener('input', () => {
+
+          clearTimeout(state.searchTimer);
+
+          state.searchTimer = setTimeout(() => {
+
+            state.page = 0;
+            loadProducts();
+
+          }, 300);
+
+        });
+
+
+      // Product type and status filters
+
+      ['typeFilter', 'statusFilter'].forEach(id => {
+
+        document.getElementById(id)
+          .addEventListener('change', () => {
+
+            state.page = 0;
+            loadProducts();
+
+          });
+
+      });
+
+
+      // Page size
+
+      document.getElementById('pageSize')
+        .addEventListener('change', event => {
+
+          state.pageSize = Number(event.target.value);
+          state.page = 0;
+
+          loadProducts();
+
+        });
+
+
+      // Previous page
+
+      document.getElementById('previousButton')
+        .addEventListener('click', () => {
+
+          if (state.page > 0) {
+
+            state.page--;
+            loadProducts();
+
+          }
+
+        });
+
+
+      // Next page
+
+      document.getElementById('nextButton')
+        .addEventListener('click', () => {
+
+          const totalPages =
+            Math.ceil(state.totalFiltered / state.pageSize);
+
+          if (state.page + 1 < totalPages) {
+
+            state.page++;
+            loadProducts();
+
+          }
+
+        });
+
+
+      // Refresh
+
+      document.getElementById('refreshButton')
+        .addEventListener('click', () => loadProducts());
+
+
+      // Initial load
+
+      await loadProducts();
+
+    });
+
+  </script>
+
+</body>
+</html>

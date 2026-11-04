@@ -39,6 +39,7 @@ async function ConfigureItemToDB(event) {
   const itemName = document.getElementById("itemName").value.trim();
   const itemType = document.getElementById("itemType").value;
   const itemCost = Number(document.getElementById("itemCost").value);
+  const unit = document.getElementById("unit").value;
   const barcode = document.getElementById("barcode").value.trim();
   const remarks = document.getElementById("remarks").value.trim();
   const button = document.getElementById("saveProductButton");
@@ -68,7 +69,7 @@ async function ConfigureItemToDB(event) {
 
   try {
     const result = await addStoreConfigItem(
-      itemID, barcode, itemName, itemType, itemCost, remarks
+      itemID, barcode, itemName, itemType, itemCost,unit, remarks
     );
 
     if (!result.success) {
@@ -104,7 +105,7 @@ async function ConfigureItemToDB(event) {
   }
 }
 
-async function addStoreConfigItem(itemID, barcode, itemName, itemType, itemCost, remarks) {
+async function addStoreConfigItem(itemID, barcode, itemName, itemType, itemCost, unit, remarks) {
   const db = window.storeSupabase || window.supabase;
   if (!db || typeof db.from !== "function") {
     return { success: false, message: "Supabase client is not ready. Refresh the page." };
@@ -118,6 +119,7 @@ async function addStoreConfigItem(itemID, barcode, itemName, itemType, itemCost,
       itemname: itemName,
       itemtype: itemType,
       itemcost: itemCost,
+      unit: unit,
       remarks: remarks || null,
       is_active: true
     });

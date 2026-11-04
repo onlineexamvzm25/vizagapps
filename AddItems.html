@@ -15,8 +15,9 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
 
     supabase = window.storeSupabase;
+    
   </script>
-   
+   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     body {
@@ -41,17 +42,30 @@
 
     label {
       display: block;
-      margin-bottom: 8px;
+      margin: 14px 0 7px;
       font-weight: bold;
     }
 
-    select, input[type="text"] {
+    #stockTotal {
+      box-sizing: border-box;
+      min-height: 42px;
+      padding: 8px 0 12px;
+      margin-bottom: 12px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    select, input[type="text"], input[type="number"] {
+      display: block;
+      box-sizing: border-box;
       width: 100%;
+      min-height: 42px;
       padding: 10px;
-      margin-bottom: 20px;
+      margin: 0 0 16px;
       border: 1px solid #ccc;
       border-radius: 5px;
       font-size: 16px;
+      background: #fff;
     }
 
     button {
@@ -69,6 +83,10 @@
       background-color: #2980b9;
     }
 
+    #productSearchResults > div:hover { background: #f0f6fc; }
+    #productSearchResults > div:focus { outline: 2px solid #2878d0; }
+    #scannerArea { overflow: hidden; }
+
     .timestamp {
       text-align: right;
       font-size: 14px;
@@ -84,113 +102,304 @@
 
  
   <script>
-    // Load items on page load
+    let storeConfigItems = [];
+    let selectedStockProduct = null;
+    let barcodeScanner = null;
+
     document.addEventListener('DOMContentLoaded', async () => {
-      const itemSelect = document.getElementById('itemSelect');
-      const priceInput = document.getElementById('aprice');
+      const db = window.storeSupabase || window.supabase;
       const timeDisplay = document.getElementById('timeDisplay');
 
-      // Set current date and time
       const now = new Date();
-      const dateString = now.toLocaleDateString();
-      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      timeDisplay.textContent = `🕒 ${dateString} ${timeString}`;
+      timeDisplay.textContent =
+        `🕒 ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`;
 
-      // Fetch storeconfigitems from Supabase
-       const tableName = TABLES.storeconfigitems;
-      const { data, error } = await supabase.from(tableName).select('*');
-      
-      storeConfigItems = data;
+      if (!db) {
+        alert('Supabase client is not available. Please refresh the page.');
+        return;
+      }
+
+      const { data, error } = await db
+        .from(TABLES.storeconfigitems)
+        .select('itemid, barcode, itemname, itemcost, unit, itemtype, is_active')
+        .eq('is_active', true)
+        .order('itemname', { ascending: true });
 
       if (error) {
-        alert('Failed to fetch items: ' + error.message);
+        alert('Failed to fetch active products: ' + error.message);
         return;
       }
 
-      // Add empty option
-      const emptyOption = document.createElement('option');
-      emptyOption.value = '';
-      emptyOption.textContent = '-- Select an Item --';
-      itemSelect.appendChild(emptyOption);
+      storeConfigItems = data || [];
 
-      // Populate combo box
-      data.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.itemid; // or item.itemname if preferred
-        option.textContent = item.itemname;
-        option.setAttribute('data-price', item.itemcost);
-        itemSelect.appendChild(option);
-      });
+      document.getElementById('productSearch')
+        .addEventListener('input', searchStockProducts);
 
-      // Set default selection
-      itemSelect.selectedIndex = 0;
+      document.getElementById('scanBarcodeButton')
+        .addEventListener('click', startBarcodeScanner);
 
+      document.getElementById('stopScannerButton')
+        .addEventListener('click', stopBarcodeScanner);
 
-  itemSelect.addEventListener('change', function () {
-  const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-  const price = selectedOption.getAttribute('data-price');
+      document.getElementById('quantityInput')
+        .addEventListener('input', calculateStockTotal);
 
-  if (price !== null && price !== '') {
-    priceInput.value = price;
-  } else {
-    priceInput.value = 1;
-  }
-  });
-});
+      document.getElementById('aprice')
+        .addEventListener('input', calculateStockTotal);
+    });
 
-
-  function getItemNameById(itemid) {
-  const item = storeConfigItems.find(item => item.itemid === itemid);
-  return item ? item.itemname : null;
-}
-
-
-
-    // Button click handler
-    async function addItemToStore() {
-      const itemSelect = document.getElementById('itemSelect');
-      const quantityInput = document.getElementById('quantityInput');
-
-      const selectedItem = itemSelect.value;
-      const quantity = quantityInput.value.trim();
-
-      if (!selectedItem || !quantity) {
-        alert('Please select an item and enter quantity.');
-        return;
-      }
-
-      // TODO: Add functionality here to save/store the item (e.g., insert to another table)
-
-
-        const itemname = getItemNameById(Number(selectedItem));
-        const itemcost = document.getElementById("aprice").value;
-        const remarks  = document.getElementById("aremarks").value;
-
-        const now = new Date();
-        //const dateString = now.toLocaleDateString();
-        //const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const pdate = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
-        const ptime = now.toTimeString().split(' ')[0]; // "HH:MM:SS"
-        const username = localStorage.getItem('store_username');;
-
-         const tableName = TABLES.storeinventory;
-        const { data, error } = await supabase.from(tableName).select('*');
-        storeInventoryTableData = data;
-
-        addItemstoStoreDaily(selectedItem, itemname, quantity, (quantity*itemcost),pdate, ptime,username, remarks);
-
-
-
-      // Reset fields
-      itemSelect.selectedIndex = 0;
-      quantityInput.value = '';
-
-      alert('✅ Item(s) added to store successfully!');
-
-  
+    function escapeStockHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
     }
 
-</script>
+    // Search active products by Item ID, product name or barcode.
+    // USB barcode scanners work by typing into the search field.
+    function searchStockProducts() {
+      const search = document.getElementById('productSearch')
+        .value.trim().toLowerCase();
+
+      const results = document.getElementById('productSearchResults');
+
+      selectedStockProduct = null;
+      document.getElementById('itemSelect').value = '';
+      document.getElementById('selectedProduct').style.display = 'none';
+      document.getElementById('productUnitLabel').textContent = 'unit';
+
+      if (!search) {
+        results.innerHTML = '';
+        calculateStockTotal();
+        return;
+      }
+
+      const matches = storeConfigItems.filter(product =>
+        String(product.itemid).includes(search) ||
+        String(product.itemname || '').toLowerCase().includes(search) ||
+        String(product.barcode || '').toLowerCase().includes(search)
+      ).slice(0, 20);
+
+      if (matches.length === 0) {
+        results.innerHTML =
+          '<p style="padding:10px;">No active products found.</p>';
+        return;
+      }
+
+      results.innerHTML = matches.map(product => `
+        <div
+          role="button"
+          tabindex="0"
+          onclick="selectStockProduct(${Number(product.itemid)})"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStockProduct(${Number(product.itemid)});}"
+          style="padding:11px; border-bottom:1px solid #eee; cursor:pointer;">
+          <strong>${escapeStockHtml(product.itemname)}</strong><br>
+          <small>
+            ID: ${escapeStockHtml(product.itemid)}
+            &nbsp; | &nbsp;
+            Barcode: ${escapeStockHtml(product.barcode || '—')}
+            &nbsp; | &nbsp;
+            Unit: ${escapeStockHtml(product.unit || 'pcs')}
+          </small>
+        </div>
+      `).join('');
+    }
+
+    function selectStockProduct(itemId) {
+      const product = storeConfigItems.find(
+        item => Number(item.itemid) === Number(itemId)
+      );
+
+      if (!product) return;
+
+      selectedStockProduct = product;
+
+      document.getElementById('itemSelect').value = product.itemid;
+      document.getElementById('productSearch').value = product.itemname;
+      document.getElementById('productSearchResults').innerHTML = '';
+
+      document.getElementById('selectedProduct').style.display = 'block';
+      document.getElementById('selectedProductDetails').innerHTML = `
+        Product: <strong>${escapeStockHtml(product.itemname)}</strong><br>
+        Item ID: ${escapeStockHtml(product.itemid)}<br>
+        Barcode: ${escapeStockHtml(product.barcode || '—')}<br>
+        Unit: ${escapeStockHtml(product.unit || 'pcs')}
+      `;
+
+      document.getElementById('productUnitLabel').textContent =
+        product.unit || 'pcs';
+
+      document.getElementById('aprice').value = product.itemcost || 1;
+
+      calculateStockTotal();
+    }
+
+    async function startBarcodeScanner() {
+      if (!window.Html5Qrcode) {
+        alert('Barcode scanner library is not available. Please refresh the page.');
+        return;
+      }
+
+      document.getElementById('scannerArea').style.display = 'block';
+
+      try {
+        barcodeScanner = new Html5Qrcode('barcodeReader');
+
+        await barcodeScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 120 }
+          },
+          async decodedText => {
+            const scannedBarcode = decodedText.trim();
+
+            document.getElementById('productSearch').value = scannedBarcode;
+
+            const exactMatch = storeConfigItems.find(product =>
+              String(product.barcode || '').trim().toLowerCase() ===
+              scannedBarcode.toLowerCase()
+            );
+
+            if (exactMatch) {
+              selectStockProduct(exactMatch.itemid);
+              await stopBarcodeScanner();
+            } else {
+              searchStockProducts();
+              alert('No active product found for barcode: ' + scannedBarcode);
+            }
+          },
+          () => {}
+        );
+      } catch (error) {
+        console.error('Camera scanner error:', error);
+        alert('Unable to start camera. Please allow camera permission and use HTTPS.');
+        document.getElementById('scannerArea').style.display = 'none';
+        barcodeScanner = null;
+      }
+    }
+
+    async function stopBarcodeScanner() {
+      if (barcodeScanner) {
+        try {
+          await barcodeScanner.stop();
+          await barcodeScanner.clear();
+        } catch (error) {
+          console.warn('Scanner stop:', error);
+        }
+        barcodeScanner = null;
+      }
+
+      document.getElementById('scannerArea').style.display = 'none';
+    }
+
+    function calculateStockTotal() {
+      const quantity = Number(document.getElementById('quantityInput').value);
+      const unitPrice = Number(document.getElementById('aprice').value);
+
+      const total = Number.isFinite(quantity) && quantity > 0 &&
+        Number.isFinite(unitPrice) && unitPrice >= 0
+          ? quantity * unitPrice
+          : 0;
+
+      document.getElementById('stockTotal').textContent = total.toFixed(2);
+    }
+
+    // Stock-in database processing will be hardened in the next implementation step.
+    async function addItemToStore() {
+      const quantityInput = document.getElementById('quantityInput');
+      const quantityText = quantityInput.value.trim();
+      const quantity = Number(quantityText);
+      const selectedItem = selectedStockProduct?.itemid;
+      const itemcost = Number(document.getElementById('aprice').value);
+      const remarks = document.getElementById('aremarks').value.trim();
+
+      if (!selectedItem || !selectedStockProduct) {
+        alert('Please search and select a product first.');
+        document.getElementById('productSearch').focus();
+        return;
+      }
+
+      if (!quantityText || !Number.isFinite(quantity) || quantity <= 0) {
+        alert('Please enter a valid quantity greater than zero.');
+        quantityInput.focus();
+        return;
+      }
+
+      if (!Number.isFinite(itemcost) || itemcost < 0) {
+        alert('Please enter a valid purchase price per unit.');
+        document.getElementById('aprice').focus();
+        return;
+      }
+
+      // Recheck that the selected product is still active before proceeding.
+      const db = window.storeSupabase || window.supabase;
+      const { data: currentProduct, error: productError } = await db
+        .from(TABLES.storeconfigitems)
+        .select('itemid, itemname, is_active')
+        .eq('itemid', selectedItem)
+        .maybeSingle();
+
+      if (productError || !currentProduct || currentProduct.is_active !== true) {
+        alert('This product is no longer active. Refresh the page and select an active product.');
+        return;
+      }
+
+      const now = new Date();
+      const pdate = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0');
+      const ptime = now.toTimeString().split(' ')[0];
+      const username = localStorage.getItem('store_username') || '';
+      const totalAmount = quantity * itemcost;
+
+      const { data: inventoryData, error: inventoryError } = await db
+        .from(TABLES.storeinventory)
+        .select('*');
+
+      if (inventoryError) {
+        alert('Unable to read current inventory: ' + inventoryError.message);
+        return;
+      }
+
+      storeInventoryTableData = inventoryData || [];
+
+      const submitButton = document.getElementById('addStockButton');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Processing...';
+
+      try {
+        await addItemstoStoreDaily(
+          selectedItem,
+          currentProduct.itemname,
+          quantity,
+          totalAmount,
+          pdate,
+          ptime,
+          username,
+          remarks || 'none'
+        );
+
+        alert('Stock-in request submitted. Please verify the inventory and inward history.');
+
+        quantityInput.value = '';
+        document.getElementById('aremarks').value = 'none';
+        calculateStockTotal();
+      } catch (error) {
+        console.error('Stock-in error:', error);
+        alert('Unable to add stock: ' + error.message);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Add Item to Store';
+      }
+    }
+  </script>
 <script>
    function backToHomepage() {
     window.location.href = 'homepage.html';
@@ -206,21 +415,52 @@
 
     <div class="timestamp" id="timeDisplay">🕒</div>
 
-    <label for="itemSelect">Select Item to Add to Store:</label>
-    <select id="itemSelect"></select>
+    <label for="productSearch">Search Product (ID / Name / Barcode):</label>
 
-    <label for="quantityInput">Enter Quantity of Item:</label>
-    <input type="text" id="quantityInput" placeholder="Enter quantity"> 
+    <input
+      type="text"
+      id="productSearch"
+      placeholder="Enter Item ID, Product Name or Scan Barcode"
+      autocomplete="off">
 
-    <label for="aprice">Price:</label>
-    <input type="number" id="aprice" value="1" placeholder="price"> <br> <br>
+    <button type="button" id="scanBarcodeButton">
+      Scan Barcode Using Camera
+    </button>
+
+    <div id="scannerArea" style="display:none; margin:15px 0;">
+      <div id="barcodeReader" style="width:100%;"></div>
+      <button type="button" id="stopScannerButton">
+        Stop Camera
+      </button>
+    </div>
+
+    <div id="productSearchResults"
+        style="border:1px solid #ddd; border-radius:5px; margin-bottom:20px;">
+    </div>
+
+    <div id="selectedProduct"
+        style="display:none; padding:12px; background:#eef7ff;
+                border-radius:6px; margin-bottom:20px;">
+      <strong>Selected Product</strong>
+      <p id="selectedProductDetails"></p>
+    </div>
+
+    <input type="hidden" id="itemSelect">
+
+    <label for="quantityInput">Enter Quantity (<span id="productUnitLabel">unit</span>):</label>
+    <input type="number" id="quantityInput" min="0" step="any" placeholder="Enter quantity"> 
+
+    <label for="aprice">Purchase Price Per Unit:</label>
+    <input type="number" id="aprice" min="0" step="any" value="1" placeholder="Price per unit">
+    <label>Total Amount:</label>
+    <div id="stockTotal" style="font-size:20px; font-weight:bold; margin-bottom:20px;">0.00</div>
 
 
     <label for="remarks">Enter Remarks(optional):</label> 
     <input type="text" id="aremarks" value="none" placeholder="remarks"> <br>
 
 
-    <button onclick="addItemToStore()"> Add Item to Store</button> <br> <br> <br>
+    <button id="addStockButton" onclick="addItemToStore()"> Add Item to Store</button> <br> <br> <br>
     <button onclick="backToHomepage()"> Back To Home Page</button> 
 
   </div>

@@ -100,8 +100,18 @@
 
     const tableName = TABLES.storeconfigitems;
     // Fetch items from Supabase
-    const { data, error } = await supabase.from(tableName).select('*');
-    storeConfigItems = data;
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('is_active', true)
+      .order('itemname', { ascending: true });
+
+    if (error) {
+      alert('Failed to fetch active items: ' + error.message);
+      return;
+    }
+
+    storeConfigItems = data || [];
 
     if (error) {
       alert('Failed to fetch items: ' + error.message);
