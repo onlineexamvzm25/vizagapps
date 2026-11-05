@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f2f2f2">
   <title>Store Management System</title>
 
  <!-- Supabase SDK -->
@@ -20,10 +22,13 @@
    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
+    * { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #f2f2f2;
-      padding: 40px;
+      padding: 24px 16px;
+      margin: 0;
       color: #333;
     }
 
@@ -32,11 +37,12 @@
     }
 
     .container {
+      width: 100%;
+      max-width: 560px;
       background-color: #fff;
-      padding: 25px;
-      border-radius: 8px;
+      padding: 26px;
+      border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 500px;
       margin: 0 auto;
     }
 
@@ -92,6 +98,57 @@
       font-size: 14px;
       color: #555;
       margin-bottom: 20px;
+    }
+
+    /* Stock-in success feedback */
+    .stock-success-toast {
+      display: none;
+      margin: 12px 0 14px;
+      padding: 12px 14px;
+      border: 1px solid #86d6a5;
+      border-left: 5px solid #16834b;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e5f8eb, #c9f0d7);
+      color: #105b35;
+      box-shadow: 0 7px 18px rgba(22, 131, 75, .14);
+      font-size: 14px;
+      line-height: 1.5;
+      animation: stockToastIn .22s ease-out;
+    }
+    .stock-success-toast.show { display: block; }
+    .stock-success-toast strong { color: #0b6939; }
+    @keyframes stockToastIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 14px 10px;
+      }
+      .container {
+        max-width: 100%;
+        padding: 20px 16px;
+        border-radius: 10px;
+      }
+      h2 {
+        font-size: 21px;
+        margin-top: 2px;
+      }
+      .timestamp {
+        margin-top: 12px;
+        margin-bottom: 18px;
+        font-size: 12px;
+      }
+      label {
+        margin-top: 12px;
+      }
+      button {
+        min-height: 44px;
+        padding: 11px 14px;
+      }
+      #barcodeReader {
+        max-width: 100%;
+      }
     }
   </style>
 
@@ -311,14 +368,46 @@
       document.getElementById('stockTotal').textContent = total.toFixed(2);
     }
 
-    // Stock-in database processing will be hardened in the next implementation step.
+    let stockSuccessTimer = null;
+
+    function showStockSuccess(message) {
+      const toast = document.getElementById('stockSuccessMessage');
+      toast.textContent = message;
+      toast.classList.add('show');
+      if (stockSuccessTimer) clearTimeout(stockSuccessTimer);
+      stockSuccessTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
+    function resetStockEntryFields() {
+      selectedStockProduct = null;
+      document.getElementById('productSearch').value = '';
+      document.getElementById('productSearchResults').innerHTML = '';
+      document.getElementById('itemSelect').value = '';
+      document.getElementById('selectedProduct').style.display = 'none';
+      document.getElementById('selectedProductDetails').innerHTML = '';
+      document.getElementById('productUnitLabel').textContent = 'unit';
+      document.getElementById('quantityInput').value = '';
+      document.getElementById('aprice').value = '';
+      document.getElementById('aremarks').value = 'none';
+      calculateStockTotal();
+      document.getElementById('productSearch').focus();
+    }
+
+    // Stock-in uses the atomic database RPC. Do not call the legacy
+    // addItemstoStoreDaily() helper from this page.
     async function addItemToStore() {
       const quantityInput = document.getElementById('quantityInput');
       const quantityText = quantityInput.value.trim();
       const quantity = Number(quantityText);
       const selectedItem = selectedStockProduct?.itemid;
-      const itemcost = Number(document.getElementById('aprice').value);
-      const remarks = document.getElementById('aremarks').value.trim();
+      const unitPriceText = document.getElementById('aprice').value.trim();
+      const unitPrice = Number(unitPriceText);
+      const remarksText = document.getElementById('aremarks').value.trim();
+      const remarks = remarksText && remarksText.toLowerCase() !== 'none'
+        ? remarksText
+        : null;
 
       if (!selectedItem || !selectedStockProduct) {
         alert('Please search and select a product first.');
@@ -332,67 +421,66 @@
         return;
       }
 
-      if (!Number.isFinite(itemcost) || itemcost < 0) {
-        alert('Please enter a valid purchase price per unit.');
+      if (Math.round(quantity * 1000) !== quantity * 1000) {
+        alert('Quantity can have a maximum of 3 decimal places.');
+        quantityInput.focus();
+        return;
+      }
+
+      if (!unitPriceText || !Number.isFinite(unitPrice) || unitPrice < 0) {
+        alert('Please enter a valid purchase price per unit (zero or greater).');
         document.getElementById('aprice').focus();
         return;
       }
 
-      // Recheck that the selected product is still active before proceeding.
+      if (Math.round(unitPrice * 100) !== unitPrice * 100) {
+        alert('Purchase price can have a maximum of 2 decimal places.');
+        document.getElementById('aprice').focus();
+        return;
+      }
+
       const db = window.storeSupabase || window.supabase;
-      const { data: currentProduct, error: productError } = await db
-        .from(TABLES.storeconfigitems)
-        .select('itemid, itemname, is_active')
-        .eq('itemid', selectedItem)
-        .maybeSingle();
-
-      if (productError || !currentProduct || currentProduct.is_active !== true) {
-        alert('This product is no longer active. Refresh the page and select an active product.');
+      if (!db || typeof db.rpc !== 'function') {
+        alert('Supabase client is not available. Please refresh the page.');
         return;
       }
-
-      const now = new Date();
-      const pdate = now.getFullYear() + '-' +
-        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-        String(now.getDate()).padStart(2, '0');
-      const ptime = now.toTimeString().split(' ')[0];
-      const username = localStorage.getItem('store_username') || '';
-      const totalAmount = quantity * itemcost;
-
-      const { data: inventoryData, error: inventoryError } = await db
-        .from(TABLES.storeinventory)
-        .select('*');
-
-      if (inventoryError) {
-        alert('Unable to read current inventory: ' + inventoryError.message);
-        return;
-      }
-
-      storeInventoryTableData = inventoryData || [];
 
       const submitButton = document.getElementById('addStockButton');
       submitButton.disabled = true;
       submitButton.textContent = 'Processing...';
 
       try {
-        await addItemstoStoreDaily(
-          selectedItem,
-          currentProduct.itemname,
-          quantity,
-          totalAmount,
-          pdate,
-          ptime,
-          username,
-          remarks || 'none'
+        const { data, error } = await db.rpc('store_add_stock', {
+          p_item_id: Number(selectedItem),
+          p_quantity: quantity,
+          p_unit_price: unitPrice,
+          p_remarks: remarks
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Stock-in failed.');
+        }
+
+        if (!data || data.success !== true) {
+          throw new Error(data?.message || 'The database did not confirm the stock-in.');
+        }
+
+        const total = Number(data.total_amount);
+        const stockAfter = Number(data.stock_after);
+
+        const productName = data.item_name || selectedStockProduct.itemname;
+        const productUnit = selectedStockProduct.unit || 'pcs';
+        const addedQuantity = Number(data.quantity_added).toFixed(3);
+
+        resetStockEntryFields();
+        showStockSuccess(
+          '✓ Stock added successfully! ' + productName + ' — ' +
+          addedQuantity + ' ' + productUnit + ' added. Total: ₹' +
+          total.toFixed(2) + '. Available stock: ' +
+          stockAfter.toFixed(3) + ' ' + productUnit + '.'
         );
-
-        alert('Stock-in request submitted. Please verify the inventory and inward history.');
-
-        quantityInput.value = '';
-        document.getElementById('aremarks').value = 'none';
-        calculateStockTotal();
       } catch (error) {
-        console.error('Stock-in error:', error);
+        console.error('Atomic stock-in RPC error:', error);
         alert('Unable to add stock: ' + error.message);
       } finally {
         submitButton.disabled = false;
@@ -407,6 +495,7 @@
 
 </script>
 
+  <link rel="stylesheet" href="store-ui.css">
 </head>
 
 <body>
@@ -448,10 +537,10 @@
     <input type="hidden" id="itemSelect">
 
     <label for="quantityInput">Enter Quantity (<span id="productUnitLabel">unit</span>):</label>
-    <input type="number" id="quantityInput" min="0" step="any" placeholder="Enter quantity"> 
+    <input type="number" id="quantityInput" min="0" step="0.001" placeholder="Enter quantity"> 
 
     <label for="aprice">Purchase Price Per Unit:</label>
-    <input type="number" id="aprice" min="0" step="any" value="1" placeholder="Price per unit">
+    <input type="number" id="aprice" min="0" step="0.01" value="1" placeholder="Price per unit">
     <label>Total Amount:</label>
     <div id="stockTotal" style="font-size:20px; font-weight:bold; margin-bottom:20px;">0.00</div>
 
@@ -460,7 +549,9 @@
     <input type="text" id="aremarks" value="none" placeholder="remarks"> <br>
 
 
-    <button id="addStockButton" onclick="addItemToStore()"> Add Item to Store</button> <br> <br> <br>
+    <button id="addStockButton" onclick="addItemToStore()"> Add Item to Store</button>
+    <div id="stockSuccessMessage" class="stock-success-toast" role="status" aria-live="polite"></div>
+    <br><br>
     <button onclick="backToHomepage()"> Back To Home Page</button> 
 
   </div>

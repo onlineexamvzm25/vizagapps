@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
   <title>Reports Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
    <link rel="stylesheet" href="DetailedReports.css">
+  <link rel="stylesheet" href="store-ui.css">
 </head>
 <body>
 
@@ -18,6 +20,7 @@
     <button id="btnItem" class="report-btn">Item Reports</button>
     <button id="btnSaleAnalysis" class="report-btn">Sale Analysis Reports</button>
     <button id="btnNotSold" class="report-btn">Not Sold Reports</button>
+    <button id="btnBillWise" class="report-btn">Bill-wise Sales Reports</button>
     <button id="homeBtn">Home</button>
   </div>
 
@@ -445,15 +448,239 @@ dynamicControls.appendChild(dateWrapper);
       renderTable(rows);
     }
 
+
+    // Bill-wise sales report: bill headers come from store_sales_bills;
+    // product rows come from solditemsfromstore using bill_id.
+    async function handleBillWiseReports() {
+      controlsDiv.innerHTML = '';
+      resultsDiv.innerHTML = '';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'horizontal-form';
+
+      const periodLabel = document.createElement('label');
+      periodLabel.textContent = 'Period: ';
+      const period = document.createElement('select');
+
+      [
+        ['entire', 'Entire'],
+        ['single', 'Single Date'],
+        ['last7', 'Last 7 Days'],
+        ['month', 'Select Month']
+      ].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        period.appendChild(option);
+      });
+
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.style.display = 'none';
+
+      const monthInput = document.createElement('select');
+      monthInput.style.display = 'none';
+      for (let month = 1; month <= 12; month++) {
+        const option = document.createElement('option');
+        option.value = String(month).padStart(2, '0');
+        option.textContent = new Date(2000, month - 1, 1)
+          .toLocaleString('en-IN', { month: 'long' });
+        monthInput.appendChild(option);
+      }
+      monthInput.value = String(new Date().getMonth() + 1).padStart(2, '0');
+
+      const searchInput = document.createElement('input');
+      searchInput.type = 'search';
+      searchInput.placeholder = 'Search bill number / customer / salesperson';
+      searchInput.setAttribute('aria-label', 'Search bill number, customer or salesperson');
+
+      const phoneSearchInput = document.createElement('input');
+      phoneSearchInput.type = 'search';
+      phoneSearchInput.inputMode = 'numeric';
+      phoneSearchInput.placeholder = 'Customer phone number';
+      phoneSearchInput.setAttribute('aria-label', 'Search by customer phone number');
+
+      wrapper.append(periodLabel, period, dateInput, monthInput, searchInput, phoneSearchInput);
+      controlsDiv.appendChild(wrapper);
+
+      period.addEventListener('change', () => {
+        dateInput.style.display = period.value === 'single' ? '' : 'none';
+        monthInput.style.display = period.value === 'month' ? '' : 'none';
+      });
+
+      showGetButton(() => fetchBillWiseData({
+        period: period.value,
+        singleDate: dateInput.value,
+        month: monthInput.value,
+        search: searchInput.value.trim(),
+        phoneSearch: phoneSearchInput.value.trim()
+      }));
+    }
+
+    async function fetchBillWiseData({ period, singleDate, month, search, phoneSearch }) {
+      resultsDiv.innerHTML = 'Loading bill-wise report...';
+      document.getElementById('pdfButtonContainer').style.display = 'none';
+
+      let query = supabase
+        .from('store_sales_bills')
+        .select('bill_id, bill_number, bill_date, bill_time, customer_name, customer_phone, sold_by, total_amount, status')
+        .order('bill_date', { ascending: false })
+        .order('bill_time', { ascending: false });
+
+      if (period === 'single') {
+        if (!singleDate) {
+          resultsDiv.textContent = 'Please select a date.';
+          return;
+        }
+        query = query.eq('bill_date', singleDate);
+      } else if (period === 'last7') {
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 6);
+        const dateText = [
+          fromDate.getFullYear(),
+          String(fromDate.getMonth() + 1).padStart(2, '0'),
+          String(fromDate.getDate()).padStart(2, '0')
+        ].join('-');
+        query = query.gte('bill_date', dateText);
+      } else if (period === 'month') {
+        const year = new Date().getFullYear();
+        const startDate = `${year}-${month}-01`;
+        const nextMonthDate = new Date(year, Number(month), 1);
+        const endDate = [
+          nextMonthDate.getFullYear(),
+          String(nextMonthDate.getMonth() + 1).padStart(2, '0'),
+          '01'
+        ].join('-');
+        query = query.gte('bill_date', startDate).lt('bill_date', endDate);
+      }
+
+      const { data: bills, error: billError } = await query;
+      if (billError) {
+        resultsDiv.textContent = 'Error loading bills: ' + billError.message;
+        return;
+      }
+
+      if (!bills || bills.length === 0) {
+        resultsDiv.textContent = 'No bills found for this selection.';
+        return;
+      }
+
+      const billIds = bills.map(bill => bill.bill_id);
+      const { data: lines, error: lineError } = await supabase
+        .from(TABLES.solditemsfromstore)
+        .select('bill_id, itemid, itemname, soldquantity, unit_price, soldprice, unit')
+        .in('bill_id', billIds)
+        .order('itemname', { ascending: true });
+
+      if (lineError) {
+        resultsDiv.textContent = 'Error loading bill items: ' + lineError.message;
+        return;
+      }
+
+      const linesByBill = new Map();
+      (lines || []).forEach(line => {
+        if (!linesByBill.has(line.bill_id)) linesByBill.set(line.bill_id, []);
+        linesByBill.get(line.bill_id).push(line);
+      });
+
+      const normalizedSearch = (search || '').toLowerCase();
+      // Compare digits only so phone searches also work if a stored number
+      // contains spaces, +91, hyphens or other formatting characters.
+      const normalizedPhoneSearch = String(phoneSearch || '').replace(/\D/g, '');
+      const visibleBills = bills.filter(bill => {
+        const matchesGeneralSearch = !normalizedSearch || [
+          bill.bill_number, bill.customer_name, bill.sold_by
+        ].some(value => String(value || '').toLowerCase().includes(normalizedSearch));
+        const storedPhone = String(bill.customer_phone || '').replace(/\D/g, '');
+        const matchesPhone = !normalizedPhoneSearch || storedPhone.includes(normalizedPhoneSearch);
+        return matchesGeneralSearch && matchesPhone;
+      });
+
+      if (visibleBills.length === 0) {
+        resultsDiv.textContent = 'No bills match your search.';
+        return;
+      }
+
+      const totalAmount = visibleBills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0);
+      const summary = document.createElement('p');
+      summary.className = 'bill-report-summary';
+      summary.textContent = `Bills: ${visibleBills.length} | Total Sales: ₹${totalAmount.toFixed(2)}`;
+      resultsDiv.appendChild(summary);
+
+      const table = document.createElement('table');
+      table.id = 'dataTable';
+      const headers = [
+        'Bill Number', 'Date', 'Time', 'Customer', 'Phone', 'Sold By',
+        'Item ID', 'Item Name', 'Quantity', 'Unit', 'Unit Price',
+        'Line Amount', 'Bill Total', 'Status'
+      ];
+      const thead = table.createTHead();
+      const headerRow = thead.insertRow();
+      headers.forEach(label => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      visibleBills.forEach(bill => {
+        const billLines = linesByBill.get(bill.bill_id) || [];
+        if (billLines.length === 0) {
+          const row = tbody.insertRow();
+          [
+            bill.bill_number, bill.bill_date, bill.bill_time, bill.customer_name || '',
+            bill.customer_phone || '', bill.sold_by, '', 'No item rows found',
+            '', '', '', '', Number(bill.total_amount || 0).toFixed(2), bill.status
+          ].forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = value == null ? '' : String(value);
+          });
+          return;
+        }
+
+        billLines.forEach((line, index) => {
+          const row = tbody.insertRow();
+          const values = [
+            index === 0 ? bill.bill_number : '',
+            index === 0 ? bill.bill_date : '',
+            index === 0 ? bill.bill_time : '',
+            index === 0 ? (bill.customer_name || '') : '',
+            index === 0 ? (bill.customer_phone || '') : '',
+            index === 0 ? bill.sold_by : '',
+            line.itemid,
+            line.itemname,
+            line.soldquantity,
+            line.unit || '',
+            line.unit_price == null ? '' : Number(line.unit_price).toFixed(2),
+            line.soldprice == null ? '' : Number(line.soldprice).toFixed(2),
+            index === 0 ? Number(bill.total_amount || 0).toFixed(2) : '',
+            index === 0 ? bill.status : ''
+          ];
+          values.forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = value == null ? '' : String(value);
+          });
+        });
+      });
+
+      resultsDiv.appendChild(table);
+      document.getElementById('pdfButtonContainer').style.display = 'block';
+    }
+
     // Attach event listeners
     document.getElementById('btnDate').onclick = handleDateReport;
     document.getElementById('btnItem').onclick = handleItemReport;
     document.getElementById('btnSaleAnalysis').onclick = handleSaleAnalysis;
     document.getElementById('btnNotSold').onclick = handleNotSold;
+    document.getElementById('btnBillWise').onclick = handleBillWiseReports;
     document.getElementById('homeBtn').onclick = () => {
       window.location.href = 'AdminReports.html';
     };
 
+
+  if (new URLSearchParams(window.location.search).get('report') === 'bills') {
+    handleBillWiseReports();
+  }
 
   document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
   const tableElement = document.getElementById('dataTable');

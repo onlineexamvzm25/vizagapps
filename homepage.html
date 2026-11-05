@@ -2,177 +2,222 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f3f6fb">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#eaf4ff">
   <title>STOREOFGAMES</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      padding: 28px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      color: #172033;
-      background: linear-gradient(135deg, #eef3fb 0%, #f8fafc 55%, #e9f0fa 100%);
-    }
-    .home-card {
-      width: 100%;
-      max-width: 590px;
-      padding: 34px;
-      background: #fff;
-      border: 1px solid #e8edf5;
-      border-radius: 18px;
-      box-shadow: 0 14px 38px rgba(28, 48, 80, .10);
-    }
-    .brand {
-      text-align: center;
-      color: #172b4d;
-      font-size: clamp(27px, 5vw, 32px);
-      font-weight: 750;
-      letter-spacing: .6px;
-    }
-    .tagline {
-      margin-top: 7px;
-      text-align: center;
-      color: #7a8799;
-      font-size: 14px;
-    }
-    .account-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 25px 0 28px;
-      padding: 13px;
-      background: #f5f8fc;
-      border: 1px solid #e8edf5;
-      border-radius: 11px;
-    }
-    #loggedInUser {
-      margin-right: auto;
-      color: #43516a;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .small-button {
-      min-height: 39px;
-      padding: 9px 15px;
-      border: 0;
-      border-radius: 7px;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: filter .2s, transform .15s;
-    }
-    .small-button:hover, .action-button:hover { filter: brightness(.94); }
-    .small-button:active, .action-button:active { transform: translateY(1px); }
-    #changePasswordButton { background: #2878d0; }
-    #logoutButton { background: #c44747; }
-    .section-title {
-      margin: 0 0 15px;
-      color: #43516a;
-      font-size: 14px;
-      font-weight: 650;
-    }
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 13px;
-    }
-    .action-button {
-      width: 100%;
-      min-height: 58px;
-      padding: 13px 15px;
-      border: 0;
-      border-radius: 9px;
-      background: #1675dc;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      line-height: 1.3;
-      cursor: pointer;
-      box-shadow: 0 4px 9px rgba(22, 117, 220, .16);
-      transition: filter .2s, transform .15s;
-    }
-    .close-button {
-      width: 100%;
-      min-height: 48px;
-      margin-top: 13px;
-      border: 1px solid #d8e0eb;
-      border-radius: 9px;
-      background: #f7f9fc;
-      color: #536176;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .close-button:hover { background: #edf2f8; }
-    button:focus-visible {
-      outline: 3px solid rgba(39, 119, 210, .28);
-      outline-offset: 2px;
-    }
-    @media (max-width: 520px) {
-      .home-card { padding: 28px 21px 22px; border-radius: 15px; }
-      .account-bar { justify-content: center; }
-      #loggedInUser { flex-basis: 100%; margin: 0 0 3px; text-align: center; }
-      .small-button { flex: 1; }
-      .menu-grid { grid-template-columns: 1fr; gap: 11px; }
-      .action-button { min-height: 53px; }
-    }
-  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
+  <style>
+    :root {
+      --navy:#102b70; --blue:#087de5; --green:#078b45; --page:#eaf4ff;
+      --shadow:0 18px 48px rgba(31,83,145,.16);
+    }
+    * { box-sizing:border-box; }
+    html { min-height:100%; }
+    body {
+      min-height:100vh; margin:0; padding:clamp(12px,3vw,34px);
+      display:flex; align-items:center; justify-content:center;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif; color:var(--navy);
+      background:radial-gradient(circle at 8% 8%,#d8f4ff 0,transparent 28%),
+        radial-gradient(circle at 95% 90%,#d8f9e7 0,transparent 30%),
+        linear-gradient(135deg,#e8f1ff 0%,#f8fcff 52%,#e4f5ff 100%);
+    }
+    button { font:inherit; }
+    .dashboard {
+      position:relative; isolation:isolate; overflow:hidden;
+      width:min(100%,1260px); padding:clamp(20px,3.2vw,42px);
+      border:1px solid rgba(255,255,255,.95); border-radius:clamp(20px,3vw,38px);
+      background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(246,251,255,.94));
+      box-shadow:var(--shadow),inset 0 0 0 1px rgba(90,160,255,.12);
+    }
+    .dashboard::before,.dashboard::after { content:"";position:absolute;z-index:-1;pointer-events:none; }
+    .dashboard::before { width:55%;height:190px;top:-115px;left:-8%;border-radius:50%;background:linear-gradient(90deg,rgba(75,178,255,.22),rgba(73,235,170,.16));transform:rotate(-8deg); }
+    .dashboard::after { width:55%;height:170px;right:-10%;bottom:-115px;border-radius:50%;background:linear-gradient(90deg,rgba(67,177,255,.12),rgba(71,229,137,.22));transform:rotate(-8deg); }
+    .brand { text-align:center;margin:0 0 clamp(22px,3vw,34px); }
+    .brand h1 { margin:0;color:#092d79;font-size:clamp(29px,5vw,54px);font-weight:900;letter-spacing:.5px;line-height:1.05;text-shadow:0 2px 0 #fff; }
+    .brand h1::after { content:"";display:block;width:min(390px,65%);height:5px;margin:8px auto 0;border-radius:99px;background:linear-gradient(90deg,#56c6ff,#078b45); }
+    .brand p { margin:9px 0 0;color:#526582;font-size:clamp(12px,1.7vw,18px);font-weight:750;letter-spacing:1.2px; }
+    .account-bar { display:flex;align-items:center;gap:12px;padding:13px 16px;margin-bottom:clamp(22px,3vw,32px);border:1px solid #b9d6ff;border-radius:19px;background:linear-gradient(100deg,#edf6ff,#f7fbff);box-shadow:0 7px 18px rgba(43,108,190,.08); }
+    #loggedInUser { flex:1;min-width:0;font-size:clamp(16px,2.2vw,27px);font-weight:900;color:#12377f;overflow-wrap:anywhere; }
+    #loggedInUser .welcome-name { color:#078b45; }
+    .account-button { min-height:54px;padding:0 22px;border:0;border-radius:15px;color:white;font-size:clamp(12px,1.5vw,17px);font-weight:900;cursor:pointer;box-shadow:0 5px 12px rgba(20,65,140,.16);transition:transform .16s,filter .16s;white-space:nowrap; }
+    .account-button:hover,.operation-card:hover { filter:brightness(1.035);transform:translateY(-2px); }
+    .account-button:active,.operation-card:active { transform:translateY(0); }
+    #changePasswordButton { background:linear-gradient(135deg,#149bff,#0752d3); }
+    #logoutButton { background:linear-gradient(135deg,#ff565b,#c90024); }
+    .section-heading { display:flex;align-items:center;gap:16px;margin:0 0 19px;color:#102f7c;font-size:clamp(21px,3vw,34px);font-weight:950;letter-spacing:.3px; }
+    .section-heading::after { content:"";height:2px;flex:1;background:linear-gradient(90deg,#78b7ff,rgba(120,183,255,.1)); }
+    .heading-icon { display:grid;place-items:center;width:42px;height:42px;border-radius:13px;color:#087de5;background:linear-gradient(145deg,#e5f5ff,#cbe6ff);font-size:27px; }
+    .menu-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+    .operation-card { position:relative;display:flex;align-items:center;gap:clamp(12px,2vw,22px);min-height:126px;padding:17px 20px;overflow:hidden;text-align:left;border:1px solid var(--edge);border-radius:23px;background:linear-gradient(120deg,var(--start),var(--end));color:var(--ink);cursor:pointer;box-shadow:0 7px 16px var(--glow),inset 0 1px 0 rgba(255,255,255,.9);transition:transform .16s,filter .16s,box-shadow .16s; }
+    .operation-card::after { content:"";position:absolute;width:44%;height:85px;right:-10%;bottom:-49px;border-radius:50%;background:var(--shine);transform:rotate(-10deg); }
+    .operation-card.primary { --start:#079c43;--end:#00c85a;--edge:#00db59;--ink:#fff;--glow:rgba(0,170,75,.23);--shine:rgba(181,255,94,.45); }
+    .operation-card.stock { --start:#fff8e8;--end:#ffedbd;--edge:#ffd27a;--ink:#15356e;--glow:rgba(255,177,34,.16);--shine:rgba(255,191,55,.28); }
+    .operation-card.products { --start:#eaf7ff;--end:#cceaff;--edge:#85ccff;--ink:#123476;--glow:rgba(35,155,255,.15);--shine:rgba(65,174,255,.22); }
+    .operation-card.configure { --start:#f6f0ff;--end:#e4d5ff;--edge:#c4a5ff;--ink:#26316f;--glow:rgba(145,90,255,.15);--shine:rgba(175,133,255,.25); }
+    .operation-card.reports { --start:#eafff0;--end:#c9f7d4;--edge:#8de9a6;--ink:#123b79;--glow:rgba(39,190,92,.15);--shine:rgba(70,226,112,.24); }
+    .operation-card.developer { --start:#fff0f8;--end:#ffd7eb;--edge:#ff91c6;--ink:#38246e;--glow:rgba(235,73,157,.17);--shine:rgba(255,119,187,.28); }
+    .card-icon { position:relative;z-index:1;display:grid;place-items:center;flex:0 0 clamp(66px,8vw,88px);width:clamp(66px,8vw,88px);height:clamp(66px,8vw,88px);border-radius:19px;background:rgba(255,255,255,.9);box-shadow:0 4px 10px rgba(34,76,130,.10);font-size:clamp(34px,4.5vw,49px); }
+    .card-divider { position:relative;z-index:1;width:2px;height:67px;flex:0 0 2px;background:currentColor;opacity:.28; }
+    .card-copy { position:relative;z-index:1;min-width:0; }
+    .card-title { display:block;font-size:clamp(16px,2.2vw,27px);font-weight:950;line-height:1.15;letter-spacing:.1px; }
+    .card-description { display:block;margin-top:8px;font-size:clamp(11px,1.45vw,17px);font-weight:700;line-height:1.3;opacity:.92; }
+    .primary .card-title { color:#fff; }
+    .primary .card-description { color:#f0fff5; }
+    .footer { margin-top:clamp(24px,3.2vw,38px);display:flex;align-items:center;justify-content:center;gap:13px;color:#344d79;font-size:clamp(11px,1.5vw,17px);font-weight:800;text-align:center;letter-spacing:.3px; }
+    .footer strong { color:#103c94; }
+    .footer-dot { color:#079b4c;font-size:22px; }
+    /* DEVELOPER NOTES MODAL */
+    .modal-backdrop { position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(9,26,61,.48);backdrop-filter:blur(7px); }
+    .modal-backdrop.open { display:flex; }
+    .developer-modal { width:min(100%,590px);overflow:hidden;border:2px solid #b5efc8;border-radius:24px;background:linear-gradient(145deg,#fff,#f1fff5);box-shadow:0 24px 75px rgba(0,45,25,.3);animation:modalIn .2s ease-out; }
+    @keyframes modalIn { from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)} }
+    .modal-header { display:flex;align-items:center;gap:12px;padding:17px 21px;background:linear-gradient(110deg,#087d39,#05a94d);color:white; }
+    .modal-header h2 { flex:1;margin:0;font-size:clamp(19px,3vw,25px);font-weight:950;letter-spacing:.5px; }
+    .modal-close { width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:white;font-size:27px;line-height:1;cursor:pointer; }
+    .modal-body { display:flex;align-items:center;gap:20px;padding:clamp(22px,4vw,32px); }
+    .developer-illustration { flex:0 0 100px;width:100px;height:100px;display:grid;place-items:center;border-radius:25px;background:linear-gradient(145deg,#d8ffe3,#b9f3cc);font-size:58px; }
+    .modal-message { margin:0 0 19px;color:#123579;font-size:clamp(16px,2.3vw,21px);font-weight:950;line-height:1.4; }
+    .whatsapp-link { display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;padding:12px 16px;border-radius:14px;background:linear-gradient(100deg,#079447,#06b95a);color:white;text-decoration:none;font-size:clamp(13px,1.8vw,17px);font-weight:950;box-shadow:0 6px 15px rgba(0,155,73,.2); }
+    .whatsapp-link:hover { filter:brightness(1.05); }
+    .whatsapp-number { display:block;margin-top:8px;text-align:center;color:#087c3e;font-size:20px;font-weight:950;letter-spacing:1px; }
+    button:focus-visible,a:focus-visible { outline:3px solid #ffbd35;outline-offset:3px; }
+    @media(max-width:680px) {
+      body { align-items:flex-start;padding:12px; }
+      .dashboard { padding:21px 15px;border-radius:23px; }
+      .brand { margin-bottom:21px; }
+      .account-bar { display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px;margin-bottom:23px; }
+      #loggedInUser { grid-column:1/-1;text-align:center;padding:3px 0 8px;font-size:clamp(17px,5vw,23px); }
+      .account-button { min-height:47px;padding:0 9px;border-radius:12px;font-size:12px; }
+      .section-heading { gap:9px;margin-bottom:14px;font-size:22px; }
+      .heading-icon { width:35px;height:35px;font-size:22px; }
+      .menu-grid { grid-template-columns:1fr;gap:11px; }
+      .operation-card { min-height:91px;padding:12px 14px;border-radius:18px;gap:12px; }
+      .card-icon { flex-basis:61px;width:61px;height:61px;border-radius:15px;font-size:34px; }
+      .card-divider { height:51px; }
+      .card-title { font-size:clamp(15px,4.2vw,20px); }
+      .card-description { margin-top:5px;font-size:clamp(10px,3vw,13px); }
+      .footer { flex-wrap:wrap;gap:7px;margin-top:23px; }
+      .modal-body { flex-direction:column;text-align:center;gap:15px;padding:22px 17px; }
+      .developer-illustration { width:78px;height:78px;flex-basis:78px;font-size:44px;border-radius:20px; }
+      .modal-message { font-size:17px; }
+    }
+    @media(min-width:681px) and (max-width:900px) {
+      .operation-card { min-height:108px;padding:14px;gap:13px; }
+      .card-icon { flex-basis:66px;width:66px;height:66px; }
+      .card-title { font-size:clamp(15px,2vw,20px); }
+      .card-description { font-size:12px; }
+    }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+  </style>
 </head>
 <body>
-  <main class="home-card">
-    <header>
-      <h1 class="brand">STOREOFGAMES</h1>
-      <p class="tagline">Store management dashboard</p>
+  <main class="dashboard">
+    <header class="brand">
+      <h1>STOREOFGAMES</h1>
+      <p>STORE MANAGEMENT DASHBOARD</p>
     </header>
 
-    <section class="account-bar" aria-label="Account options">
-      <span id="loggedInUser"></span>
-      <button id="changePasswordButton" class="small-button" type="button">Change Password</button>
-      <button id="logoutButton" class="small-button" type="button">Logout</button>
+    <section class="account-bar" aria-label="ACCOUNT OPTIONS">
+      <div id="loggedInUser" aria-live="polite">WELCOME!</div>
+      <button id="changePasswordButton" class="account-button" type="button">🔑 CHANGE PASSWORD</button>
+      <button id="logoutButton" class="account-button" type="button">↪ LOGOUT</button>
     </section>
 
-    <section aria-label="Store operations">
-      <h2 class="section-title">Store Operations</h2>
+    <section aria-label="STORE OPERATIONS">
+      <h2 class="section-heading"><span class="heading-icon" aria-hidden="true">▰</span> STORE OPERATIONS</h2>
       <div class="menu-grid">
-        <button id="Config" class="action-button" onclick="configLoad()">Configure Store Items</button>
-        <button id="ManageItems" class="action-button" onclick="ManageItems()">Manage Products</button>
-        <button id="Add" class="action-button" onclick="AddItems()">Add Items to Store</button>
-        <button id="Sold" class="action-button" onclick="RemoveItems()">Remove Sold Items</button>
-        <button id="Reports" class="action-button" onclick="AdminReports()">Admin Reports</button>
+        <button class="operation-card primary" id="Sold" type="button" onclick="RemoveItems()">
+          <span class="card-icon" aria-hidden="true">🛒</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">REMOVE SOLD ITEMS</span><span class="card-description">CREATE BILLS AND RECORD SALES</span></span>
+        </button>
+        <button class="operation-card stock" id="Add" type="button" onclick="AddItems()">
+          <span class="card-icon" aria-hidden="true">📦</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">ADD ITEMS TO STORE</span><span class="card-description">RECORD INCOMING STOCK</span></span>
+        </button>
+        <button class="operation-card products" id="ManageItems" type="button" onclick="ManageItems()">
+          <span class="card-icon" aria-hidden="true">🔎📦</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">MANAGE PRODUCTS</span><span class="card-description">EDIT PRODUCTS AND AVAILABILITY</span></span>
+        </button>
+        <button class="operation-card configure" id="Config" type="button" onclick="configLoad()">
+          <span class="card-icon" aria-hidden="true">🎚️</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">CONFIGURE STORE ITEMS</span><span class="card-description">ADD AND CONFIGURE PRODUCTS</span></span>
+        </button>
+        <button class="operation-card reports" id="Reports" type="button" onclick="AdminReports()">
+          <span class="card-icon" aria-hidden="true">📊</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">ADMIN REPORTS</span><span class="card-description">STOCK, SALES AND BILL REPORTS</span></span>
+        </button>
+        <button class="operation-card developer" id="DeveloperNotes" type="button" aria-haspopup="dialog" aria-controls="developerNotesModal">
+          <span class="card-icon" aria-hidden="true">💻</span><span class="card-divider"></span>
+          <span class="card-copy"><span class="card-title">DEVELOPER NOTES</span><span class="card-description">SOFTWARE DEVELOPMENT &amp; CONTACT</span></span>
+        </button>
       </div>
-      <button id="Close" class="close-button" onclick="CloseApplication()">Close</button>
     </section>
+
+    <footer class="footer"><strong>STOREOFGAMES</strong><span class="footer-dot">●</span><span>STORE OPERATIONS MADE SIMPLE</span></footer>
   </main>
+
+  <div class="modal-backdrop" id="developerNotesModal" role="presentation" aria-hidden="true">
+    <section class="developer-modal" role="dialog" aria-modal="true" aria-labelledby="developerNotesTitle" aria-describedby="developerNotesMessage">
+      <header class="modal-header"><span aria-hidden="true">&lt;/&gt;</span><h2 id="developerNotesTitle">DEVELOPER NOTES</h2><button class="modal-close" id="closeDeveloperNotes" type="button" aria-label="CLOSE">×</button></header>
+      <div class="modal-body">
+        <div class="developer-illustration" aria-hidden="true">💻</div>
+        <div class="modal-content">
+          <p class="modal-message" id="developerNotesMessage">WE DEVELOP SMALL AND COST-EFFICIENT SOFTWARE APPLICATIONS FOR ALL YOUR NEEDS.</p>
+          <a class="whatsapp-link" href="https://wa.me/919492511304" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💬</span> FEEL FREE TO DISCUSS / WHATSAPP</a>
+          <span class="whatsapp-number">9492511304</span>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const session = await STORE_AUTH.requireSession();
       if (session) {
-        document.getElementById('loggedInUser').textContent =
-          'Signed in: ' + (localStorage.getItem('store_username') || session.user.phone || 'User');
+        const username = localStorage.getItem('store_username') || session.user.phone || 'USER';
+        const welcome = document.getElementById('loggedInUser');
+        welcome.replaceChildren(document.createTextNode('WELCOME '));
+        const name = document.createElement('span');
+        name.className = 'welcome-name';
+        name.textContent = String(username).toLocaleUpperCase();
+        welcome.append(name, document.createTextNode('!'));
       }
+
       document.getElementById('changePasswordButton').addEventListener('click', () => {
         window.location.href = 'updatepassword.html';
       });
+
       document.getElementById('logoutButton').addEventListener('click', async () => {
         const button = document.getElementById('logoutButton');
         button.disabled = true;
-        button.textContent = 'Logging out...';
+        button.textContent = 'LOGGING OUT...';
         try { await STORE_AUTH.signOut(); }
         catch (error) {
-          alert('Logout failed: ' + error.message);
+          alert('LOGOUT FAILED: ' + error.message);
           button.disabled = false;
-          button.textContent = 'Logout';
+          button.textContent = '↪ LOGOUT';
         }
+      });
+
+      const modal = document.getElementById('developerNotesModal');
+      const openButton = document.getElementById('DeveloperNotes');
+      const closeButton = document.getElementById('closeDeveloperNotes');
+      function openDeveloperNotes() {
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        closeButton.focus();
+      }
+      function closeDeveloperNotes() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        openButton.focus();
+      }
+      openButton.addEventListener('click', openDeveloperNotes);
+      closeButton.addEventListener('click', closeDeveloperNotes);
+      modal.addEventListener('click', (event) => { if (event.target === modal) closeDeveloperNotes(); });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.classList.contains('open')) closeDeveloperNotes();
       });
     });
 
@@ -181,7 +226,6 @@
     function AddItems() { window.location.href = 'AddItems.html'; }
     function RemoveItems() { window.location.href = 'RemoveItems.html'; }
     function AdminReports() { window.location.href = 'AdminReports.html'; }
-    function CloseApplication() { window.close(); }
   </script>
 </body>
 </html>

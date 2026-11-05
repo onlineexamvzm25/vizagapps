@@ -2,248 +2,678 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Store Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f2f2f2">
+  <title>Sales Billing - Store Management System</title>
 
- <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script src="config.js"></script>
-
-
-  <script>
-    const supabaseUrl = 'https://zabwuvdtqclhbuiocdey.supabase.co'; // ✅ Correct URL
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphYnd1dmR0cWNsaGJ1aW9jZGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NDgzNDEsImV4cCI6MjA3MDMyNDM0MX0.T9cgmFpSup1OPwUD5hgEEhVbDfArPdkLaaAKjKlklxU'; // ✅ Full anon key
-
-    window.supabase = window.storeSupabase;
-  </script>
-   
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      padding: 40px;
-      color: #333;
+      margin: 0; padding: 22px 14px; background: #f2f2f2;
+      color: #263238; font-family: Arial, sans-serif;
     }
-
-    h2 {
-      color: #2c3e50;
+    .page { max-width: 1050px; margin: 0 auto; }
+    h1 { color: #243746; font-size: 25px; margin: 0 0 6px; }
+    .sub { color: #687780; font-size: 13px; margin-bottom: 18px; }
+    .panel {
+      background: #fff; border-radius: 10px; padding: 20px;
+      box-shadow: 0 3px 12px rgba(0,0,0,.07); margin-bottom: 16px;
     }
-
-    .container {
-      background-color: #fff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 500px;
-      margin: 0 auto;
+    h2 { font-size: 18px; margin: 0 0 15px; color: #2c3e50; }
+    .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+    .field { min-width: 0; }
+    label { display: block; font-weight: 700; font-size: 14px; margin: 0 0 7px; }
+    input {
+      width: 100%; min-height: 42px; border: 1px solid #cbd2d8;
+      border-radius: 6px; padding: 10px 11px; font-size: 16px; background: #fff;
     }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-
-    select, input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-
+    input:focus { outline: 2px solid #b9dcf5; border-color: #3498db; }
+    .searchrow { display: grid; grid-template-columns: minmax(0,1fr) 190px; gap: 10px; }
     button {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      width: 100%;
+      border: 0; border-radius: 6px; padding: 11px 15px; min-height: 42px;
+      background: #287fbd; color: white; font-size: 15px; font-weight: 600; cursor: pointer;
     }
-
-    button:hover {
-      background-color: #2980b9;
+    button:hover { filter: brightness(.95); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .secondary { background: #607d8b; }
+    .danger { background: #c0392b; }
+    .success { background: #218c55; }
+    .light { background: #e8eef2; color: #263238; }
+    .search-results {
+      border: 1px solid #e0e5e8; border-radius: 6px; margin-top: 8px;
+      max-height: 250px; overflow-y: auto;
     }
-
-    .timestamp {
-      text-align: right;
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 20px;
+    .result {
+      padding: 11px 12px; border-bottom: 1px solid #edf0f2; cursor: pointer;
+    }
+    .result:last-child { border-bottom: 0; }
+    .result:hover, .result:focus { background: #eff7fc; outline: none; }
+    .muted { color: #71808a; font-size: 12px; }
+    .selected {
+      margin-top: 12px; padding: 12px; background: #eef7ff;
+      border-radius: 7px; display: none; line-height: 1.6;
+    }
+    .stock-good { color: #16804a; font-weight: 700; }
+    .stock-zero { color: #bd3328; font-weight: 700; }
+    .add-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 12px; align-items: end; margin-top: 15px;
+    }
+    .add-button-wrap { position: relative; }
+    .add-success-toast {
+      display: none; position: absolute; left: 50%; bottom: calc(100% + 9px);
+      transform: translateX(-50%); z-index: 5; white-space: nowrap;
+      padding: 8px 12px; border-radius: 6px; background: #14532d;
+      color: #fff; font-size: 12px; font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2); pointer-events: none;
+    }
+    .add-success-toast::after {
+      content: ''; position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%); border: 6px solid transparent;
+      border-top-color: #14532d;
+    }
+    .scanner { display: none; margin-top: 12px; }
+    #barcodeReader { max-width: 420px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 650px; }
+    th, td { padding: 11px 9px; border-bottom: 1px solid #e8ecef; text-align: left; }
+    th { background: #f5f7f8; font-size: 13px; color: #52616b; }
+    td { font-size: 14px; }
+    .num { text-align: right; white-space: nowrap; }
+    .remove-line { padding: 7px 10px; min-height: 32px; font-size: 12px; }
+    .empty { text-align: center; color: #7b878e; padding: 25px 10px; }
+    .bill-total {
+      display: flex; justify-content: flex-end; align-items: center; gap: 18px;
+      padding-top: 16px; font-size: 17px; font-weight: 700;
+    }
+    .bill-total strong { font-size: 25px; color: #176b42; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 17px; }
+    .actions button { flex: 1 1 180px; }
+    .status { display: none; margin-top: 12px; padding: 11px; border-radius: 6px; font-size: 14px; }
+    .status.error { display: block; color: #8f241d; background: #fdecea; }
+    .status.ok { display: block; color: #176b42; background: #eaf7ef; }
+    #receiptPanel { display: none; }
+    .receipt { max-width: 760px; margin: 0 auto; color: #111; }
+    .receipt-head { text-align: center; border-bottom: 1px dashed #777; padding-bottom: 12px; margin-bottom: 12px; }
+    .receipt-head h2 { margin: 0 0 5px; color: #111; font-size: 22px; }
+    .receipt-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13px; margin: 8px 0 14px; }
+    .receipt-total { text-align: right; font-size: 20px; font-weight: 700; padding-top: 12px; }
+    .receipt-note { text-align: center; border-top: 1px dashed #777; margin-top: 15px; padding-top: 12px; font-size: 12px; }
+    @media (max-width: 680px) {
+      body { padding: 12px 8px; }
+      .panel { padding: 15px 12px; }
+      h1 { font-size: 21px; }
+      .grid { grid-template-columns: 1fr; gap: 11px; }
+      .searchrow { grid-template-columns: 1fr; }
+      .add-grid { grid-template-columns: 1fr 1fr; }
+      .add-grid button { grid-column: 1 / -1; }
+      .bill-total { justify-content: space-between; }
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      body * { visibility: hidden !important; }
+      #receiptPanel, #receiptPanel * { visibility: visible !important; }
+      #receiptPanel {
+        display: block !important; position: absolute; left: 0; top: 0;
+        width: 100%; margin: 0; padding: 0; box-shadow: none; border: 0;
+      }
+      #receiptPanel .no-print { display: none !important; }
+      .receipt { max-width: none; }
+      table { min-width: 0; }
+      th, td { padding: 7px 5px; font-size: 11px; }
+      @page { margin: 12mm; }
     }
   </style>
+  <link rel="stylesheet" href="store-ui.css">
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>SALES BILLING</h1>
+    <div class="sub">Create a bill, record sales and update inventory securely.</div>
+  </header>
 
-    <!-- Load your JS functions -->
-  <script src="storemanage.js"></script>
-  <script window.storeConfigItems = []; ></script>
-  <script window.storeInventoryTableData1 = []; ></script>
+  <section class="panel">
+    <h2>1. Customer Details <span class="muted">(Optional)</span></h2>
+    <div class="grid">
+      <div class="field">
+        <label for="customerName">Customer Name</label>
+        <input id="customerName" type="text" maxlength="120" placeholder="Enter customer name">
+      </div>
+      <div class="field">
+        <label for="customerPhone">Customer Phone</label>
+        <input id="customerPhone" type="tel" maxlength="20" placeholder="Enter phone number">
+      </div>
+    </div>
+  </section>
 
-  
+  <section class="panel">
+    <h2>2. Select Product</h2>
+    <label for="productSearch">Search by Item ID, Product Name or Barcode</label>
+    <div class="searchrow">
+      <input id="productSearch" type="text" autocomplete="off"
+             placeholder="Type product ID, name or scan barcode">
+      <button type="button" id="scanBarcodeButton">Scan Barcode Using Camera</button>
+    </div>
+    <div class="scanner" id="scannerArea">
+      <div id="barcodeReader"></div>
+      <button type="button" class="secondary" id="stopScannerButton" style="margin-top:8px;">Stop Camera</button>
+    </div>
+    <div class="search-results" id="productSearchResults" style="display:none;"></div>
 
- 
+    <div class="selected" id="selectedProduct">
+      <strong id="selectedProductName"></strong><br>
+      <span id="selectedProductInfo" class="muted"></span><br>
+      Available stock: <span id="availableStock" class="stock-good"></span>
+    </div>
+
+    <div class="add-grid">
+      <div class="field">
+        <label for="quantityInput">Quantity</label>
+        <input id="quantityInput" type="number" min="0.001" step="0.001" placeholder="Quantity" disabled>
+      </div>
+      <div class="field">
+        <label for="sellingPrice">Selling Price / Unit (₹)</label>
+        <input id="sellingPrice" type="number" min="0" step="0.01" placeholder="Price" disabled>
+      </div>
+      <div class="field">
+        <label>Line Amount</label>
+        <input id="lineAmount" type="text" value="₹0.00" readonly>
+      </div>
+      <div class="add-button-wrap">
+        <button type="button" id="addToBillButton" disabled>Add to Bill</button>
+        <span id="addSuccessToast" class="add-success-toast" role="status" aria-live="polite">✓ Added to bill!</span>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:8px;">Selling price is prefilled from the product's default price. You can change it before adding.</div>
+  </section>
+
+  <section class="panel">
+    <h2>3. Current Bill</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th class="num">Line Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="billLines">
+          <tr><td colspan="5" class="empty">No products added yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bill-total">
+      <span>Bill Total</span>
+      <strong id="billTotal">₹0.00</strong>
+    </div>
+    <div id="billingStatus" class="status"></div>
+    <div class="actions">
+      <button type="button" class="success" id="completeBillButton" disabled>Complete Bill</button>
+      <button type="button" class="light" id="clearBillButton">Clear Current Bill</button>
+      <button type="button" class="secondary" onclick="backToHomepage()">Back to Home Page</button>
+    </div>
+  </section>
+
+  <section class="panel" id="receiptPanel">
+    <div class="receipt" id="receiptContent"></div>
+    <div class="actions no-print">
+      <button type="button" class="success" onclick="window.print()">Print / Save as PDF</button>
+      <button type="button" class="secondary" id="newBillButton">Create New Bill</button>
+    </div>
+  </section>
+</div>
+
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const itemSelect = document.getElementById('itemSelect');
-    const priceInput = document.getElementById('aprice');
-  
-    const timeDisplay = document.getElementById('timeDisplay');
+  let storeConfigItems = [];
+  let inventoryByItemId = new Map();
+  let selectedProduct = null;
+  let billItems = [];
+  let barcodeScanner = null;
+  let billInProgress = false;
 
-    // Set current date and time
-    const now = new Date();
-    const dateString = now.toLocaleDateString();
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    timeDisplay.textContent = `🕒 ${dateString} ${timeString}`;
+  const money = value => '₹' + Number(value || 0).toFixed(2);
+  const qtyText = value => Number(value).toFixed(3);
 
-    const tableName = TABLES.storeconfigitems;
-    // Fetch items from Supabase
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .eq('is_active', true)
-      .order('itemname', { ascending: true });
-
-    if (error) {
-      alert('Failed to fetch active items: ' + error.message);
-      return;
-    }
-
-    storeConfigItems = data || [];
-
-    if (error) {
-      alert('Failed to fetch items: ' + error.message);
-      return;
-    }
-
-    // Add empty default option
-    const emptyOption = document.createElement('option');
-    emptyOption.value = '';
-    emptyOption.textContent = '-- Select an Item --';
-    itemSelect.appendChild(emptyOption);
-
-    // Populate combo box with item names and attach price in data attribute
-    data.forEach(item => {
-      const option = document.createElement('option');
-      option.value = item.itemid;
-      option.textContent = item.itemname;
-      option.setAttribute('data-price', item.itemcost);
-      itemSelect.appendChild(option);
-    });
-
-    // Set default selection
-    itemSelect.selectedIndex = 0;
-
-    // ✅ Handle price setting on item change
-  itemSelect.addEventListener('change', function () {
-  const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-  const price = selectedOption.getAttribute('data-price');
-
-  if (price !== null && price !== '') {
-    priceInput.value = price;
-  } else {
-    priceInput.value = 1;
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
   }
-});
 
+  function showStatus(message, type) {
+    const el = document.getElementById('billingStatus');
+    el.textContent = message;
+    el.className = 'status ' + type;
+  }
+
+  function clearStatus() {
+    const el = document.getElementById('billingStatus');
+    el.textContent = '';
+    el.className = 'status';
+  }
+
+  async function loadProductsAndInventory() {
+    const db = window.storeSupabase || window.supabase;
+    if (!db) throw new Error('Supabase client is not available.');
+
+    const [productsResult, inventoryResult] = await Promise.all([
+      db.from(TABLES.storeconfigitems)
+        .select('itemid, barcode, itemname, itemcost, unit, itemtype, is_active')
+        .eq('is_active', true)
+        .order('itemname', { ascending: true }),
+      db.from(TABLES.storeinventory).select('itemid, quantity')
+    ]);
+
+    if (productsResult.error) throw productsResult.error;
+    if (inventoryResult.error) throw inventoryResult.error;
+
+    storeConfigItems = productsResult.data || [];
+    inventoryByItemId = new Map(
+      (inventoryResult.data || []).map(row => [Number(row.itemid), Number(row.quantity || 0)])
+    );
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('productSearch').addEventListener('input', searchProducts);
+    document.getElementById('quantityInput').addEventListener('input', calculateLineAmount);
+    document.getElementById('sellingPrice').addEventListener('input', calculateLineAmount);
+    document.getElementById('addToBillButton').addEventListener('click', addProductToBill);
+    document.getElementById('completeBillButton').addEventListener('click', completeBill);
+    document.getElementById('clearBillButton').addEventListener('click', clearCurrentBill);
+    document.getElementById('scanBarcodeButton').addEventListener('click', startBarcodeScanner);
+    document.getElementById('stopScannerButton').addEventListener('click', stopBarcodeScanner);
+    document.getElementById('newBillButton').addEventListener('click', startNewBill);
+
+    try {
+      await loadProductsAndInventory();
+    } catch (error) {
+      alert('Unable to load products or inventory: ' + error.message);
+    }
+    renderBill();
   });
 
-  function getItemNameById(itemid) {
-    const item = storeConfigItems.find(item => item.itemid === itemid);
-    return item ? item.itemname : null;
-  }
+  function searchProducts() {
+    const query = document.getElementById('productSearch').value.trim().toLowerCase();
+    const results = document.getElementById('productSearchResults');
+    results.innerHTML = '';
+    results.style.display = query ? 'block' : 'none';
+    if (!query) return;
 
-  async function addItemToStore() {
-    const itemSelect = document.getElementById('itemSelect');
-    const quantityInput = document.getElementById('quantityInput');
-    const selectedItem = itemSelect.value;
-    const quantity = quantityInput.value.trim();
+    const matches = storeConfigItems.filter(product =>
+      String(product.itemid).includes(query) ||
+      String(product.itemname || '').toLowerCase().includes(query) ||
+      String(product.barcode || '').toLowerCase().includes(query)
+    ).slice(0, 25);
 
-    if (!selectedItem || !quantity) {
-      alert('Please select an item and enter quantity.');
+    if (!matches.length) {
+      results.innerHTML = '<div class="result muted">No active products found.</div>';
       return;
     }
 
-    const itemname = getItemNameById(Number(selectedItem));
-    const itemcost = document.getElementById("aprice").value;
-    const remarks = document.getElementById("aremarks").value;
-    const now = new Date();
-    const pdate = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
-    const ptime = now.toTimeString().split(' ')[0]; // "HH:MM:SS"
-    //const dateString = now.toLocaleDateString();
-    //const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const username = localStorage.getItem('store_username');;
+    results.innerHTML = matches.map(product => {
+      const stock = inventoryByItemId.get(Number(product.itemid)) || 0;
+      const unit = product.unit || 'pcs';
+      const stockClass = stock > 0 ? 'stock-good' : 'stock-zero';
+      return `<div class="result" role="button" tabindex="0"
+        data-item-id="${Number(product.itemid)}">
+        <strong>${escapeHtml(product.itemname)}</strong>
+        <div class="muted">ID: ${escapeHtml(product.itemid)} · Barcode: ${escapeHtml(product.barcode || '—')}</div>
+        <div class="${stockClass}">Available: ${qtyText(stock)} ${escapeHtml(unit)}</div>
+      </div>`;
+    }).join('');
 
-    const tableName = TABLES.storeinventory;
-    const { data, error } = await supabase.from(tableName).select('*');
-    
-    const itemExists = data.some(item => item.itemname === itemname);
-    if (!itemExists) {
-      alert("Item Stock Not Available to Sold...Please Select Other Item");
-      return; // Stop the process
+    results.querySelectorAll('.result[data-item-id]').forEach(row => {
+      const choose = () => selectProduct(Number(row.dataset.itemId));
+      row.addEventListener('click', choose);
+      row.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          choose();
+        }
+      });
+    });
+  }
+
+  function selectProduct(itemId) {
+    const product = storeConfigItems.find(p => Number(p.itemid) === Number(itemId));
+    if (!product) return;
+
+    selectedProduct = product;
+    const stock = inventoryByItemId.get(Number(itemId)) || 0;
+    const unit = product.unit || 'pcs';
+
+    document.getElementById('productSearchResults').style.display = 'none';
+    document.getElementById('productSearch').value = product.itemname;
+    document.getElementById('selectedProduct').style.display = 'block';
+    document.getElementById('selectedProductName').textContent = product.itemname;
+    document.getElementById('selectedProductInfo').textContent =
+      `Item ID: ${product.itemid} · Barcode: ${product.barcode || '—'} · Unit: ${unit}`;
+
+    const stockEl = document.getElementById('availableStock');
+    stockEl.textContent = `${qtyText(stock)} ${unit}`;
+    stockEl.className = stock > 0 ? 'stock-good' : 'stock-zero';
+
+    document.getElementById('quantityInput').disabled = stock <= 0;
+    document.getElementById('sellingPrice').disabled = stock <= 0;
+    document.getElementById('addToBillButton').disabled = stock <= 0;
+    document.getElementById('quantityInput').value = '';
+    document.getElementById('sellingPrice').value =
+      product.itemcost === null || product.itemcost === undefined ? '0.00' : Number(product.itemcost).toFixed(2);
+    calculateLineAmount();
+
+    if (stock <= 0) showStatus('This product currently has no available stock.', 'error');
+    else clearStatus();
+  }
+
+  function calculateLineAmount() {
+    const quantity = Number(document.getElementById('quantityInput').value);
+    const price = Number(document.getElementById('sellingPrice').value);
+    const total = Number.isFinite(quantity) && quantity > 0 &&
+      Number.isFinite(price) && price >= 0 ? quantity * price : 0;
+    document.getElementById('lineAmount').value = money(total);
+  }
+
+  let addSuccessToastTimer = null;
+
+  function showAddSuccessToast() {
+    const toast = document.getElementById('addSuccessToast');
+    toast.style.display = 'block';
+    if (addSuccessToastTimer) clearTimeout(addSuccessToastTimer);
+    addSuccessToastTimer = setTimeout(() => {
+      toast.style.display = 'none';
+      addSuccessToastTimer = null;
+    }, 1800);
+  }
+
+  function resetProductEntryFields() {
+    selectedProduct = null;
+    document.getElementById('productSearch').value = '';
+    document.getElementById('productSearchResults').style.display = 'none';
+    document.getElementById('selectedProduct').style.display = 'none';
+    document.getElementById('quantityInput').value = '';
+    document.getElementById('sellingPrice').value = '';
+    document.getElementById('lineAmount').value = money(0);
+    document.getElementById('quantityInput').disabled = true;
+    document.getElementById('sellingPrice').disabled = true;
+    document.getElementById('addToBillButton').disabled = true;
+    document.getElementById('productSearch').focus();
+  }
+
+  function addProductToBill() {
+    clearStatus();
+    if (!selectedProduct) {
+      showStatus('Please select a product first.', 'error');
+      return;
     }
-    storeInventoryTableData1 = data;
 
-    SoldItemsFromStoreDaily(
-      selectedItem,
-      itemname,
-      quantity,
-      (quantity * itemcost),
-      pdate,
-      ptime,
-      username,
-      remarks
-    );
+    const quantityText = document.getElementById('quantityInput').value.trim();
+    const priceText = document.getElementById('sellingPrice').value.trim();
+    const quantity = Number(quantityText);
+    const unitPrice = Number(priceText);
+    const itemId = Number(selectedProduct.itemid);
+    const stock = inventoryByItemId.get(itemId) || 0;
 
-    // Reset fields
-    itemSelect.selectedIndex = 0;
-    quantityInput.value = '';
+    if (!quantityText || !Number.isFinite(quantity) || quantity <= 0 ||
+        Math.round(quantity * 1000) !== quantity * 1000) {
+      showStatus('Enter a quantity greater than zero, with up to 3 decimal places.', 'error');
+      return;
+    }
+    if (!priceText || !Number.isFinite(unitPrice) || unitPrice < 0 ||
+        Math.round(unitPrice * 100) !== unitPrice * 100) {
+      showStatus('Enter a valid selling price with up to 2 decimal places.', 'error');
+      return;
+    }
 
-    alert('✅ Item(s) Sold from store successfully!');
+    const existing = billItems.find(line => line.item_id === itemId);
+    const combinedQuantity = quantity + (existing ? existing.quantity : 0);
+
+    if (combinedQuantity > stock) {
+      showStatus(
+        `Insufficient stock for ${selectedProduct.itemname}. Available: ${qtyText(stock)} ${selectedProduct.unit || 'pcs'}. Already in bill: ${qtyText(existing ? existing.quantity : 0)}.`,
+        'error'
+      );
+      return;
+    }
+
+    if (existing) {
+      existing.quantity = combinedQuantity;
+      existing.unit_price = unitPrice;
+    } else {
+      billItems.push({
+        item_id: itemId,
+        item_name: selectedProduct.itemname,
+        unit: selectedProduct.unit || 'pcs',
+        quantity,
+        unit_price: unitPrice,
+        remarks: null
+      });
+    }
+
+    renderBill();
+    resetProductEntryFields();
+    showAddSuccessToast();
+  }
+
+  function removeBillLine(itemId) {
+    billItems = billItems.filter(line => line.item_id !== Number(itemId));
+    renderBill();
+    clearStatus();
+  }
+
+  function renderBill() {
+    const tbody = document.getElementById('billLines');
+    if (!billItems.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No products added yet.</td></tr>';
+    } else {
+      tbody.innerHTML = billItems.map(line => {
+        const lineTotal = line.quantity * line.unit_price;
+        return `<tr>
+          <td><strong>${escapeHtml(line.item_name)}</strong><div class="muted">ID: ${line.item_id}</div></td>
+          <td>${qtyText(line.quantity)} ${escapeHtml(line.unit)}</td>
+          <td>${money(line.unit_price)}</td>
+          <td class="num">${money(lineTotal)}</td>
+          <td><button type="button" class="danger remove-line" data-remove-id="${line.item_id}">Remove</button></td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('[data-remove-id]').forEach(button => {
+        button.addEventListener('click', () => removeBillLine(Number(button.dataset.removeId)));
+      });
+    }
+
+    const total = billItems.reduce((sum, line) => sum + line.quantity * line.unit_price, 0);
+    document.getElementById('billTotal').textContent = money(total);
+    document.getElementById('completeBillButton').disabled = !billItems.length || billInProgress;
+  }
+
+  function clearCurrentBill() {
+    if (!billItems.length) return;
+    if (!confirm('Clear all products from the current bill?')) return;
+    billItems = [];
+    renderBill();
+    clearStatus();
+  }
+
+  async function completeBill() {
+    if (billInProgress || !billItems.length) return;
+
+    const customerName = document.getElementById('customerName').value.trim();
+    const customerPhone = document.getElementById('customerPhone').value.trim();
+    if (customerPhone) {
+      const digits = customerPhone.replace(/\D/g, '');
+      if (digits.length < 7 || digits.length > 15) {
+        showStatus('Please enter a valid customer phone number (7 to 15 digits), or leave it blank.', 'error');
+        return;
+      }
+    }
+
+    const db = window.storeSupabase || window.supabase;
+    if (!db || typeof db.rpc !== 'function') {
+      showStatus('Supabase client is not available. Please refresh the page.', 'error');
+      return;
+    }
+
+    billInProgress = true;
+    const button = document.getElementById('completeBillButton');
+    button.textContent = 'Processing Bill...';
+    renderBill();
+    clearStatus();
+
+    const payload = billItems.map(line => ({
+      item_id: line.item_id,
+      quantity: line.quantity,
+      unit_price: line.unit_price,
+      remarks: line.remarks
+    }));
+
+    try {
+      const { data, error } = await db.rpc('store_complete_sales_bill', {
+        p_customer_name: customerName || null,
+        p_customer_phone: customerPhone || null,
+        p_items: payload
+      });
+
+      if (error) throw new Error(error.message || 'Bill completion failed.');
+      if (!data || data.success !== true || !data.bill_id) {
+        throw new Error('The database did not confirm bill completion.');
+      }
+
+      renderReceipt(data);
+      document.getElementById('receiptPanel').style.display = 'block';
+      document.getElementById('receiptPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      billItems = [];
+      renderBill();
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerPhone').value = '';
+
+      try {
+        await loadProductsAndInventory();
+        if (selectedProduct) selectProduct(selectedProduct.itemid);
+      } catch (refreshError) {
+        console.warn('Inventory refresh after completed bill:', refreshError);
+      }
+
+      showStatus(`Bill ${data.bill_number} completed successfully.`, 'ok');
+    } catch (error) {
+      console.error('Complete bill RPC error:', error);
+      showStatus('Unable to complete bill: ' + error.message, 'error');
+    } finally {
+      billInProgress = false;
+      button.textContent = 'Complete Bill';
+      renderBill();
+    }
+  }
+
+  function renderReceipt(data) {
+    const items = Array.isArray(data.items) ? data.items : [];
+    const date = new Date().toLocaleString('en-IN');
+    const rows = items.map(item => `
+      <tr>
+        <td>${escapeHtml(item.item_name)}</td>
+        <td>${qtyText(item.quantity)} ${escapeHtml(item.unit || '')}</td>
+        <td class="num">${money(item.unit_price)}</td>
+        <td class="num">${money(item.line_total)}</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('receiptContent').innerHTML = `
+      <div class="receipt-head">
+        <h2>STORE SALES BILL</h2>
+        <div>Thank you for your purchase</div>
+      </div>
+      <div class="receipt-meta">
+        <div><strong>Bill No:</strong> ${escapeHtml(data.bill_number)}</div>
+        <div><strong>Date:</strong> ${escapeHtml(date)}</div>
+      </div>
+      ${data.customer_name ? `<div><strong>Customer:</strong> ${escapeHtml(data.customer_name)}</div>` : ''}
+      ${data.customer_phone ? `<div><strong>Phone:</strong> ${escapeHtml(data.customer_phone)}</div>` : ''}
+      <div style="margin-top:12px;" class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Product</th><th>Quantity</th><th class="num">Rate</th><th class="num">Amount</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="receipt-total">Grand Total: ${money(data.total_amount)}</div>
+      <div class="receipt-note">Bill ID: ${escapeHtml(data.bill_id)}</div>
+    `;
+  }
+
+  function startNewBill() {
+    document.getElementById('receiptPanel').style.display = 'none';
+    document.getElementById('productSearch').value = '';
+    document.getElementById('quantityInput').value = '';
+    document.getElementById('selectedProduct').style.display = 'none';
+    document.getElementById('quantityInput').disabled = true;
+    document.getElementById('sellingPrice').disabled = true;
+    document.getElementById('addToBillButton').disabled = true;
+    selectedProduct = null;
+    clearStatus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function startBarcodeScanner() {
+    if (!window.Html5Qrcode) {
+      alert('Barcode scanner library is not available. Please refresh the page.');
+      return;
+    }
+    document.getElementById('scannerArea').style.display = 'block';
+    try {
+      barcodeScanner = new Html5Qrcode('barcodeReader');
+      await barcodeScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 120 } },
+        async decodedText => {
+          const code = decodedText.trim();
+          document.getElementById('productSearch').value = code;
+          const match = storeConfigItems.find(product =>
+            String(product.barcode || '').trim().toLowerCase() === code.toLowerCase()
+          );
+          if (match) {
+            selectProduct(match.itemid);
+            await stopBarcodeScanner();
+          } else {
+            searchProducts();
+            showStatus('No active product found for barcode: ' + code, 'error');
+          }
+        },
+        () => {}
+      );
+    } catch (error) {
+      console.error('Camera scanner error:', error);
+      alert('Unable to start camera. Allow camera permission and use HTTPS.');
+      document.getElementById('scannerArea').style.display = 'none';
+      barcodeScanner = null;
+    }
+  }
+
+  async function stopBarcodeScanner() {
+    if (barcodeScanner) {
+      try {
+        await barcodeScanner.stop();
+        await barcodeScanner.clear();
+      } catch (error) {
+        console.warn('Scanner stop:', error);
+      }
+      barcodeScanner = null;
+    }
+    document.getElementById('scannerArea').style.display = 'none';
   }
 
   function backToHomepage() {
     window.location.href = 'homepage.html';
   }
 </script>
-
-
-
-
-
-<script>
-   function backToHomepage() {
-    window.location.href = 'homepage.html';
-    }
-
-</script>
-
-</head>
-
-<body>
-  <div class="container">
-    <h2>SOLD ITEMS FROM STORE</h2>
-
-    <div class="timestamp" id="timeDisplay">🕒</div>
-
-    <label for="itemSelect">Select Item  Sold from Store:</label>
-    <select id="itemSelect"></select>
-
-    <label for="quantityInput">Enter Quantity of Item:</label>
-    <input type="text" id="quantityInput" placeholder="Enter quantity"> 
-
-    <label for="aprice">Price:</label>
-    <input type="number" id="aprice" value="1" placeholder="price"> <br> <br>
-
-    <label for="remarks">Enter Remarks(optional):</label> 
-    <input type="text" id="aremarks" value="none" placeholder="remarks"> <br>
-
-
-    <button onclick="addItemToStore()"> Sold Item From Store</button> <br> <br> <br>
-    <button onclick="backToHomepage()"> Back To Home Page</button> 
-
-  </div>
 </body>
 </html>
