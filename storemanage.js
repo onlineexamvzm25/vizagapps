@@ -30,8 +30,8 @@ async function setNextItemId() {
     }
 }
 
-// Phase 2: Add a product to the product master.
-// Barcode uniqueness is enforced by the database unique index, not only by this page.
+// Product names must be unique (case-insensitive, ignoring repeated/outer spaces).
+// The database unique index is the final safeguard against concurrent or external inserts.
 async function ConfigureItemToDB(event) {
   event.preventDefault();
 
@@ -68,8 +68,14 @@ async function ConfigureItemToDB(event) {
   button.textContent = "SAVING...";
 
   try {
+    const duplicate = await findDuplicateProductName(itemName);
+    if (!duplicate.ok) throw new Error(duplicate.message);
+    if (duplicate.exists) {
+      throw new Error(`A product named "${itemName}" already exists (Item ID: ${duplicate.itemid}). Please use a different product name.`);
+    }
+
     const result = await addStoreConfigItem(
-      itemID, barcode, itemName, itemType, itemCost,unit, remarks
+      itemID, barcode, itemName, itemType, itemCost, unit, remarks
     );
 
     if (!result.success) {
@@ -77,6 +83,9 @@ async function ConfigureItemToDB(event) {
         const detail = `${result.message || ""} ${result.details || ""}`.toLowerCase();
         if (detail.includes("barcode") || detail.includes("idx_storeconfigitems_barcode_unique")) {
           throw new Error("This barcode is already assigned to another product. Please scan or enter a different barcode.");
+        }
+        if (detail.includes("itemname") || detail.includes("idx_storeconfigitems_itemname_unique")) {
+          throw new Error("A product with the same name already exists. Please use a different product name.");
         }
         if (detail.includes("itemid") || detail.includes("storeconfigitems_pkey")) {
           throw new Error("This Item ID is already in use. Refresh the page and try again.");
@@ -103,6 +112,40 @@ async function ConfigureItemToDB(event) {
     button.disabled = false;
     button.textContent = "ADD PRODUCT";
   }
+}
+
+
+// Normalize names consistently with the database unique index.
+function normalizeProductName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+// Friendly pre-check. The database unique index remains authoritative and
+// also protects product edits, imports and simultaneous insert attempts.
+async function findDuplicateProductName(itemName) {
+  const db = window.storeSupabase || window.supabase;
+  if (!db || typeof db.from !== "function") {
+    return { ok: false, message: "Supabase client is not ready. Refresh the page and try again." };
+  }
+
+  const normalized = String(itemName || "").trim().replace(/\s+/g, " ");
+  // Escape PostgREST ILIKE wildcard characters so the lookup is an exact name match.
+  const pattern = normalized.replace(/[\\%_]/g, "\\$&");
+  const { data, error } = await db
+    .from(TABLES.storeconfigitems)
+    .select("itemid,itemname")
+    .ilike("itemname", pattern)
+    .limit(20);
+
+  if (error) {
+    console.error("Duplicate product-name check failed:", error);
+    return { ok: false, message: "Could not verify whether this product name already exists. Please try again." };
+  }
+
+  const match = (data || []).find(row => normalizeProductName(row.itemname) === normalizeProductName(normalized));
+  return match
+    ? { ok: true, exists: true, itemid: match.itemid, itemname: match.itemname }
+    : { ok: true, exists: false };
 }
 
 async function addStoreConfigItem(itemID, barcode, itemName, itemType, itemCost, unit, remarks) {
