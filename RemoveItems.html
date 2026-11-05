@@ -12,134 +12,186 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --navy:#102d72; --blue:#1769df; --blue2:#0d4fc2;
+      --green:#087d3d; --green2:#12a85a; --amber:#a76505;
+      --red:#c62828; --ink:#263b5b; --muted:#64748b;
+      --line:#c8dcfb; --card:rgba(255,255,255,.91);
+      --shadow:0 12px 30px rgba(35,75,135,.10);
+    }
+    * { box-sizing:border-box; }
     body {
-      margin: 0; padding: 22px 14px; background: #f2f2f2;
-      color: #263238; font-family: Arial, sans-serif;
+      margin:0; padding:24px 16px 36px; color:var(--ink);
+      font-family:Arial,sans-serif;
+      background:radial-gradient(circle at 8% 5%,#e5edff 0,transparent 34%),
+                 radial-gradient(circle at 95% 92%,#dcfff0 0,transparent 32%),
+                 linear-gradient(125deg,#f4f7ff 0%,#eef8fb 55%,#effff7 100%);
+      min-height:100vh;
     }
-    .page { max-width: 1050px; margin: 0 auto; }
-    h1 { color: #243746; font-size: 25px; margin: 0 0 6px; }
-    .sub { color: #687780; font-size: 13px; margin-bottom: 18px; }
+    .page { max-width:1280px; margin:0 auto; }
+    .page-header {
+      display:flex; align-items:center; gap:18px; margin:0 0 20px;
+      padding:5px 8px 12px; border-bottom:1px solid rgba(70,135,220,.22);
+    }
+    .brand-mark {
+      width:58px;height:58px;display:grid;place-items:center;flex:none;
+      border-radius:17px;background:linear-gradient(145deg,#e6f2ff,#fff);
+      box-shadow:0 5px 15px rgba(35,105,210,.15);font-size:31px;
+    }
+    .brand-name { color:var(--navy);font-size:19px;font-weight:900;letter-spacing:.3px; }
+    .brand-divider { width:2px;height:48px;background:#91baff; }
+    .page-title-wrap { min-width:0; }
+    h1 { color:var(--navy);font-size:clamp(23px,3vw,32px);margin:0 0 4px;font-weight:900;letter-spacing:.2px; }
+    .sub { color:var(--muted);font-size:13px;margin:0; }
     .panel {
-      background: #fff; border-radius: 10px; padding: 20px;
-      box-shadow: 0 3px 12px rgba(0,0,0,.07); margin-bottom: 16px;
+      background:var(--card);border:1px solid rgba(255,255,255,.95);
+      border-radius:20px;padding:20px;margin-bottom:16px;
+      box-shadow:var(--shadow);backdrop-filter:blur(8px);
     }
-    h2 { font-size: 18px; margin: 0 0 15px; color: #2c3e50; }
-    .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-    .field { min-width: 0; }
-    label { display: block; font-weight: 700; font-size: 14px; margin: 0 0 7px; }
+    h2 {
+      display:flex;align-items:center;gap:11px;font-size:18px;margin:0 0 17px;
+      color:var(--navy);font-weight:900;letter-spacing:.15px;
+    }
+    .section-icon {
+      width:38px;height:38px;display:grid;place-items:center;flex:none;
+      border-radius:12px;background:linear-gradient(145deg,#e2efff,#f8fbff);
+      color:var(--blue);font-size:20px;box-shadow:inset 0 0 0 1px #c5ddff;
+    }
+    .grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+    .field { min-width:0; }
+    label { display:block;font-weight:800;font-size:13px;margin:0 0 7px;color:#31496d; }
     input {
-      width: 100%; min-height: 42px; border: 1px solid #cbd2d8;
-      border-radius: 6px; padding: 10px 11px; font-size: 16px; background: #fff;
+      width:100%;min-height:46px;border:1px solid #bfd0e8;border-radius:11px;
+      padding:11px 13px;font-size:16px;background:#fff;color:#203653;
+      box-shadow:inset 0 1px 2px rgba(35,65,110,.04);transition:border-color .18s,box-shadow .18s;
     }
-    input:focus { outline: 2px solid #b9dcf5; border-color: #3498db; }
-    .searchrow { display: grid; grid-template-columns: minmax(0,1fr) 190px; gap: 10px; }
+    input:focus { outline:none;border-color:#4389ed;box-shadow:0 0 0 3px rgba(54,130,235,.14); }
+    input:disabled { background:#edf2fa;color:#718096; }
+    input[readonly] { background:linear-gradient(100deg,#effbf2,#e5f8eb);border-color:#a7dfb8;color:#08753a;font-weight:800; }
+    .searchrow { display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:11px; }
     button {
-      border: 0; border-radius: 6px; padding: 11px 15px; min-height: 42px;
-      background: #287fbd; color: white; font-size: 15px; font-weight: 600; cursor: pointer;
+      border:0;border-radius:11px;padding:12px 16px;min-height:45px;
+      background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;
+      font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 5px 12px rgba(24,93,200,.16);
+      transition:transform .16s,filter .16s,box-shadow .16s;
     }
-    button:hover { filter: brightness(.95); }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .secondary { background: #607d8b; }
-    .danger { background: #c0392b; }
-    .success { background: #218c55; }
-    .light { background: #e8eef2; color: #263238; }
-    .search-results {
-      border: 1px solid #e0e5e8; border-radius: 6px; margin-top: 8px;
-      max-height: 250px; overflow-y: auto;
-    }
-    .result {
-      padding: 11px 12px; border-bottom: 1px solid #edf0f2; cursor: pointer;
-    }
-    .result:last-child { border-bottom: 0; }
-    .result:hover, .result:focus { background: #eff7fc; outline: none; }
-    .muted { color: #71808a; font-size: 12px; }
-    .selected {
-      margin-top: 12px; padding: 12px; background: #eef7ff;
-      border-radius: 7px; display: none; line-height: 1.6;
-    }
-    .stock-good { color: #16804a; font-weight: 700; }
-    .stock-zero { color: #bd3328; font-weight: 700; }
-    .add-grid {
-      display: grid; grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 12px; align-items: end; margin-top: 15px;
-    }
-    .add-button-wrap { position: relative; }
+    button:hover { filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 7px 15px rgba(24,93,200,.2); }
+    button:active { transform:translateY(0); }
+    button:disabled { opacity:.48;cursor:not-allowed;transform:none;box-shadow:none; }
+    .secondary { background:linear-gradient(135deg,#647f9f,#48627f); }
+    .danger { background:linear-gradient(135deg,#e34b4b,#bd2424); }
+    .success { background:linear-gradient(135deg,#13a85a,#08763c); }
+    .light { background:linear-gradient(135deg,#edf4ff,#dceaff);color:#244b86;box-shadow:none;border:1px solid #c2d9fb; }
+    .search-results { border:1px solid #d4e2f5;border-radius:11px;margin-top:8px;max-height:250px;overflow-y:auto;background:#fff;box-shadow:0 8px 20px rgba(30,70,120,.08); }
+    .result { padding:12px 14px;border-bottom:1px solid #edf2f8;cursor:pointer; }
+    .result:last-child { border-bottom:0; }
+    .result:hover,.result:focus { background:#eff6ff;outline:none; }
+    .muted { color:var(--muted);font-size:12px; }
+    .selected { margin-top:12px;padding:13px 15px;background:linear-gradient(100deg,#eaf4ff,#f5faff);border:1px solid #c9e0ff;border-radius:12px;display:none;line-height:1.7; }
+    .stock-good { color:#087b3c;font-weight:800; }
+    .stock-zero { color:#bd3328;font-weight:800; }
+    .add-grid { display:grid;grid-template-columns:1fr 1fr 1fr 190px;gap:12px;align-items:end;margin-top:16px; }
+    .add-button-wrap { position:relative; }
+    .add-button-wrap button { width:100%; }
     .add-success-toast {
-      display: none; position: absolute; left: 50%; bottom: calc(100% + 9px);
-      transform: translateX(-50%); z-index: 5; white-space: nowrap;
-      padding: 8px 12px; border-radius: 6px; background: #14532d;
-      color: #fff; font-size: 12px; font-weight: 700;
-      box-shadow: 0 4px 12px rgba(0,0,0,.2); pointer-events: none;
+      display:none;position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);
+      z-index:5;white-space:nowrap;padding:9px 13px;border-radius:9px;
+      background:linear-gradient(135deg,#087b3d,#075a2e);color:#fff;font-size:12px;font-weight:900;
+      box-shadow:0 7px 18px rgba(4,90,43,.28);pointer-events:none;
     }
-    .add-success-toast::after {
-      content: ''; position: absolute; top: 100%; left: 50%;
-      transform: translateX(-50%); border: 6px solid transparent;
-      border-top-color: #14532d;
+    .add-success-toast::after { content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#075a2e; }
+    .scanner { display:none;margin-top:12px;padding:12px;border:1px dashed #9dbce9;border-radius:12px;background:#f5f9ff; }
+    #barcodeReader { max-width:420px;margin:auto; }
+    .table-wrap { overflow-x:auto;border:1px solid #d6e4f8;border-radius:13px;background:#fff; }
+    table { border-collapse:collapse;width:100%;min-width:650px; }
+    th,td { padding:12px 10px;border-bottom:1px solid #e8eff8;text-align:left; }
+    th { background:linear-gradient(100deg,#e5efff,#d8e8ff);font-size:12px;color:#254775;font-weight:900; }
+    td { font-size:14px; }
+    tbody tr:hover { background:#f8fbff; }
+    .num { text-align:right;white-space:nowrap; }
+    .remove-line { padding:7px 11px;min-height:32px;font-size:12px;border-radius:8px; }
+    .empty { text-align:center;color:#7b899b;padding:28px 10px; }
+    .bill-summary-row { display:grid;grid-template-columns:1.1fr 1fr;gap:13px;margin-top:15px; }
+    .bill-summary {
+      display:flex;align-items:center;justify-content:space-between;gap:15px;
+      padding:15px 17px;border:1px solid #c7ddff;border-radius:15px;
+      background:linear-gradient(110deg,#f4f8ff,#e7f1ff);
     }
-    .scanner { display: none; margin-top: 12px; }
-    #barcodeReader { max-width: 420px; }
-    .table-wrap { overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 650px; }
-    th, td { padding: 11px 9px; border-bottom: 1px solid #e8ecef; text-align: left; }
-    th { background: #f5f7f8; font-size: 13px; color: #52616b; }
-    td { font-size: 14px; }
-    .num { text-align: right; white-space: nowrap; }
-    .remove-line { padding: 7px 10px; min-height: 32px; font-size: 12px; }
-    .empty { text-align: center; color: #7b878e; padding: 25px 10px; }
+    .summary-title { color:var(--navy);font-weight:900;font-size:15px; }
+    .summary-stats { display:flex;gap:18px;flex-wrap:wrap; }
+    .summary-stat { color:#4c6381;font-size:12px;font-weight:800; }
+    .summary-stat strong { display:inline-grid;place-items:center;min-width:27px;padding:4px 8px;margin-left:5px;border-radius:8px;background:#d9f8e2;color:#08763c;font-size:14px; }
     .bill-total {
-      display: flex; justify-content: flex-end; align-items: center; gap: 18px;
-      padding-top: 16px; font-size: 17px; font-weight: 700;
+      display:flex;justify-content:space-between;align-items:center;gap:15px;
+      padding:15px 19px;border-radius:15px;background:linear-gradient(110deg,#087b3d,#075b31 75%,#087b3d);
+      color:#fff;font-size:17px;font-weight:900;box-shadow:0 7px 16px rgba(7,112,55,.18);
     }
-    .bill-total strong { font-size: 25px; color: #176b42; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 17px; }
-    .actions button { flex: 1 1 180px; }
-    .status { display: none; margin-top: 12px; padding: 11px; border-radius: 6px; font-size: 14px; }
-    .status.error { display: block; color: #8f241d; background: #fdecea; }
-    .status.ok { display: block; color: #176b42; background: #eaf7ef; }
-    #receiptPanel { display: none; }
-    .receipt { max-width: 760px; margin: 0 auto; color: #111; }
-    .receipt-head { text-align: center; border-bottom: 1px dashed #777; padding-bottom: 12px; margin-bottom: 12px; }
-    .receipt-head h2 { margin: 0 0 5px; color: #111; font-size: 22px; }
-    .receipt-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13px; margin: 8px 0 14px; }
-    .receipt-total { text-align: right; font-size: 20px; font-weight: 700; padding-top: 12px; }
-    .receipt-note { text-align: center; border-top: 1px dashed #777; margin-top: 15px; padding-top: 12px; font-size: 12px; }
-    @media (max-width: 680px) {
-      body { padding: 12px 8px; }
-      .panel { padding: 15px 12px; }
-      h1 { font-size: 21px; }
-      .grid { grid-template-columns: 1fr; gap: 11px; }
-      .searchrow { grid-template-columns: 1fr; }
-      .add-grid { grid-template-columns: 1fr 1fr; }
-      .add-grid button { grid-column: 1 / -1; }
-      .bill-total { justify-content: space-between; }
+    .bill-total strong { font-size:clamp(23px,3vw,30px);color:#fff36a;white-space:nowrap; }
+    .actions { display:flex;flex-wrap:wrap;gap:10px;margin-top:17px; }
+    .actions button { flex:1 1 180px; }
+    .status { display:none;margin-top:13px;padding:12px 14px;border-radius:11px;font-size:13px;font-weight:700; }
+    .status.error { display:block;color:#912323;background:#fff0ed;border:1px solid #ffc6bc; }
+    .status.ok { display:block;color:#086b35;background:#e8fff0;border:1px solid #a9e7bc; }
+    #receiptPanel { display:none; }
+    .receipt { max-width:760px;margin:0 auto;color:#111; }
+    .receipt-head { text-align:center;border-bottom:1px dashed #777;padding-bottom:12px;margin-bottom:12px; }
+    .receipt-head h2 { margin:0 0 5px;color:#111;font-size:22px;justify-content:center; }
+    .receipt-meta { display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:13px;margin:8px 0 14px; }
+    .receipt-total { text-align:right;font-size:20px;font-weight:700;padding-top:12px; }
+    .receipt-note { text-align:center;border-top:1px dashed #777;margin-top:15px;padding-top:12px;font-size:12px; }
+    .ui-uppercase h1,.ui-uppercase h2,.ui-uppercase label,.ui-uppercase button,.ui-uppercase th,.ui-uppercase .sub,.ui-uppercase .helper,.ui-uppercase .summary-title,.ui-uppercase .summary-stat,.ui-uppercase .bill-total span,.ui-uppercase .status { text-transform:uppercase; }
+    .helper { margin-top:10px;color:#526985;font-size:12px; }
+    @media (max-width:760px) {
+      body { padding:14px 9px 24px; }
+      .page-header { gap:11px;margin-bottom:14px; }
+      .brand-mark { width:45px;height:45px;font-size:25px;border-radius:13px; }
+      .brand-name { font-size:14px; }
+      .brand-divider { height:40px; }
+      .panel { padding:16px 13px;border-radius:16px; }
+      .grid { grid-template-columns:1fr;gap:11px; }
+      .searchrow { grid-template-columns:1fr; }
+      .add-grid { grid-template-columns:1fr 1fr;gap:10px; }
+      .add-grid .add-button-wrap { grid-column:1/-1; }
+      .bill-summary-row { grid-template-columns:1fr; }
+      .bill-summary { align-items:flex-start;flex-direction:column; }
+      .bill-total { padding:14px; }
+      .actions button { flex:1 1 100%; }
+    }
+    @media (max-width:390px) {
+      .brand-divider { display:none; }
+      .brand-name { font-size:12px; }
+      .add-grid { grid-template-columns:1fr; }
+      .add-grid .add-button-wrap { grid-column:auto; }
+      .summary-stats { gap:9px; }
+      h2 { font-size:16px; }
     }
     @media print {
-      body { background: #fff; padding: 0; }
-      body * { visibility: hidden !important; }
-      #receiptPanel, #receiptPanel * { visibility: visible !important; }
-      #receiptPanel {
-        display: block !important; position: absolute; left: 0; top: 0;
-        width: 100%; margin: 0; padding: 0; box-shadow: none; border: 0;
-      }
-      #receiptPanel .no-print { display: none !important; }
-      .receipt { max-width: none; }
-      table { min-width: 0; }
-      th, td { padding: 7px 5px; font-size: 11px; }
-      @page { margin: 12mm; }
+      body { background:#fff;padding:0; }
+      body * { visibility:hidden!important; }
+      #receiptPanel,#receiptPanel * { visibility:visible!important; }
+      #receiptPanel { display:block!important;position:absolute;left:0;top:0;width:100%;margin:0;padding:0;box-shadow:none;border:0; }
+      #receiptPanel .no-print { display:none!important; }
+      .receipt { max-width:none; }
+      table { min-width:0; }
+      th,td { padding:7px 5px;font-size:11px; }
+      @page { margin:12mm; }
     }
   </style>
-  <link rel="stylesheet" href="store-ui.css">
 </head>
 <body>
-<div class="page">
-  <header>
-    <h1>SALES BILLING</h1>
-    <div class="sub">Create a bill, record sales and update inventory securely.</div>
+<div class="page ui-uppercase">
+  <header class="page-header">
+    <div class="brand-mark" aria-hidden="true">🏪</div>
+    <div class="brand-name">STOREOFGAMES</div>
+    <div class="brand-divider"></div>
+    <div class="page-title-wrap">
+      <h1>SALES BILLING</h1>
+      <div class="sub">Create a bill, record sales and update inventory securely.</div>
+    </div>
   </header>
 
   <section class="panel">
-    <h2>1. Customer Details <span class="muted">(Optional)</span></h2>
+    <h2><span class="section-icon">👤</span>1. Customer Details <span class="muted">(Optional)</span></h2>
     <div class="grid">
       <div class="field">
         <label for="customerName">Customer Name</label>
@@ -153,7 +205,7 @@
   </section>
 
   <section class="panel">
-    <h2>2. Select Product</h2>
+    <h2><span class="section-icon">📦</span>2. Select Product</h2>
     <label for="productSearch">Search by Item ID, Product Name or Barcode</label>
     <div class="searchrow">
       <input id="productSearch" type="text" autocomplete="off"
@@ -190,11 +242,11 @@
         <span id="addSuccessToast" class="add-success-toast" role="status" aria-live="polite">✓ Added to bill!</span>
       </div>
     </div>
-    <div class="muted" style="margin-top:8px;">Selling price is prefilled from the product's default price. You can change it before adding.</div>
+    <div class="helper">ℹ Selling price is prefilled from the product's default price. You can change it before adding.</div>
   </section>
 
   <section class="panel">
-    <h2>3. Current Bill</h2>
+    <h2><span class="section-icon">🧾</span>3. Current Bill</h2>
     <div class="table-wrap">
       <table>
         <thead>
@@ -211,9 +263,18 @@
         </tbody>
       </table>
     </div>
-    <div class="bill-total">
-      <span>Bill Total</span>
-      <strong id="billTotal">₹0.00</strong>
+    <div class="bill-summary-row">
+      <div class="bill-summary">
+        <div class="summary-title">📋 BILL SUMMARY</div>
+        <div class="summary-stats">
+          <div class="summary-stat">Items <strong id="billItemCount">0</strong></div>
+          <div class="summary-stat">Total Quantity <strong id="billQuantityCount">0</strong></div>
+        </div>
+      </div>
+      <div class="bill-total">
+        <span>🧾 BILL TOTAL</span>
+        <strong id="billTotal">₹0.00</strong>
+      </div>
     </div>
     <div id="billingStatus" class="status"></div>
     <div class="actions">
@@ -491,7 +552,10 @@
     }
 
     const total = billItems.reduce((sum, line) => sum + line.quantity * line.unit_price, 0);
+    const totalQuantity = billItems.reduce((sum, line) => sum + line.quantity, 0);
     document.getElementById('billTotal').textContent = money(total);
+    document.getElementById('billItemCount').textContent = String(billItems.length);
+    document.getElementById('billQuantityCount').textContent = qtyText(totalQuantity).replace(/\.000$/, '');
     document.getElementById('completeBillButton').disabled = !billItems.length || billInProgress;
   }
 

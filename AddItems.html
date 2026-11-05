@@ -22,134 +22,66 @@
    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      padding: 24px 16px;
-      margin: 0;
-      color: #333;
-    }
-
-    h2 {
-      color: #2c3e50;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 560px;
-      background-color: #fff;
-      padding: 26px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin: 0 auto;
-    }
-
-    label {
-      display: block;
-      margin: 14px 0 7px;
-      font-weight: bold;
-    }
-
-    #stockTotal {
-      box-sizing: border-box;
-      min-height: 42px;
-      padding: 8px 0 12px;
-      margin-bottom: 12px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    select, input[type="text"], input[type="number"] {
-      display: block;
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 42px;
-      padding: 10px;
-      margin: 0 0 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-      background: #fff;
-    }
-
-    button {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      width: 100%;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    #productSearchResults > div:hover { background: #f0f6fc; }
-    #productSearchResults > div:focus { outline: 2px solid #2878d0; }
-    #scannerArea { overflow: hidden; }
-
-    .timestamp {
-      text-align: right;
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 20px;
-    }
-
-    /* Stock-in success feedback */
-    .stock-success-toast {
-      display: none;
-      margin: 12px 0 14px;
-      padding: 12px 14px;
-      border: 1px solid #86d6a5;
-      border-left: 5px solid #16834b;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #e5f8eb, #c9f0d7);
-      color: #105b35;
-      box-shadow: 0 7px 18px rgba(22, 131, 75, .14);
-      font-size: 14px;
-      line-height: 1.5;
-      animation: stockToastIn .22s ease-out;
-    }
-    .stock-success-toast.show { display: block; }
-    .stock-success-toast strong { color: #0b6939; }
-    @keyframes stockToastIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @media (max-width: 600px) {
-      body {
-        padding: 14px 10px;
-      }
-      .container {
-        max-width: 100%;
-        padding: 20px 16px;
-        border-radius: 10px;
-      }
-      h2 {
-        font-size: 21px;
-        margin-top: 2px;
-      }
-      .timestamp {
-        margin-top: 12px;
-        margin-bottom: 18px;
-        font-size: 12px;
-      }
-      label {
-        margin-top: 12px;
-      }
-      button {
-        min-height: 44px;
-        padding: 11px 14px;
-      }
-      #barcodeReader {
-        max-width: 100%;
-      }
-    }
+    :root{--navy:#102b68;--blue:#1769df;--blue2:#0d4fc2;--green:#078b43;--green2:#0b6d35;--mint:#e8fff1;--line:#cfe1f6;--muted:#64748b;--yellow:#fff3bf;--shadow:0 14px 36px rgba(35,83,145,.13)}
+    *{box-sizing:border-box}
+    html{min-height:100%;-webkit-text-size-adjust:100%}
+    body{margin:0;padding:26px 18px 42px;font-family:Inter,"Segoe UI",Arial,sans-serif;color:#1b3154;background:radial-gradient(ellipse at 8% 5%,rgba(105,158,255,.2),transparent 34%),radial-gradient(ellipse at 94% 8%,rgba(92,215,168,.18),transparent 32%),linear-gradient(135deg,#eaf3ff 0%,#f8fcff 48%,#eafff5 100%);background-attachment:fixed}
+    .page-header{max-width:1180px;margin:0 auto 18px;display:flex;align-items:center;gap:18px;padding:4px 8px 14px;border-bottom:1px solid rgba(89,145,214,.25)}
+    .brand-mark{width:62px;height:62px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#fff,#dff0ff);box-shadow:0 7px 18px rgba(33,101,190,.14);font-size:34px;flex:0 0 auto}
+    .brand-name{font-weight:900;font-size:clamp(20px,3vw,29px);letter-spacing:-.7px;color:var(--navy);white-space:nowrap}
+    .brand-rule{height:4px;width:170px;max-width:100%;border-radius:5px;background:linear-gradient(90deg,#16a34a,#b4ed46);margin-top:5px}
+    .header-divider{height:48px;width:2px;background:#8db8ee;flex:0 0 auto}
+    .page-heading{min-width:0}
+    .page-heading h1{margin:0;color:var(--navy);font-size:clamp(21px,3.3vw,34px);font-weight:900;letter-spacing:-.8px;text-transform:uppercase}
+    .page-heading p{margin:5px 0 0;color:#526b8e;font-size:14px;font-weight:650;letter-spacing:.35px;text-transform:uppercase}
+    .container{width:100%;max-width:1180px;margin:0 auto;padding:25px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.95);border-radius:25px;box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+    .top-line{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+    .section-pill{display:inline-flex;align-items:center;gap:10px;padding:10px 20px;border-radius:30px;background:linear-gradient(120deg,#2478ec,#104bbd);color:#fff;font-weight:900;font-size:clamp(16px,2.2vw,22px);letter-spacing:.3px;text-transform:uppercase;box-shadow:0 7px 16px rgba(24,94,204,.2)}
+    .timestamp{padding:10px 15px;border-radius:25px;background:#e5f2ff;color:#173d82;font-weight:750;font-size:14px;white-space:nowrap}
+    .section-card{padding:20px 20px 18px;margin-bottom:18px;border:1px solid #d5e8fb;border-radius:22px;background:linear-gradient(135deg,rgba(238,247,255,.95),rgba(255,255,255,.96));box-shadow:inset 0 1px 0 #fff,0 6px 18px rgba(51,104,166,.06)}
+    .section-heading{display:inline-flex;align-items:center;gap:10px;margin:0 0 17px;padding:9px 18px;border-radius:24px;background:linear-gradient(120deg,#2180f2,#0c4fbd);color:white;font-size:clamp(16px,2.1vw,21px);font-weight:900;text-transform:uppercase}
+    label{display:block;margin:0 0 9px;color:#17356e;font-size:15px;font-weight:850;text-transform:uppercase;letter-spacing:.15px}
+    .search-row{display:grid;grid-template-columns:minmax(0,1fr) 275px;gap:14px;align-items:end}
+    input[type=text],input[type=number],select{width:100%;min-height:52px;padding:13px 16px;margin:0;border:1.5px solid #a9c9f2;border-radius:13px;background:#fff;color:#203653;font-family:inherit;font-size:16px;font-weight:600;box-shadow:inset 0 1px 3px rgba(35,75,125,.04);outline:none}
+    input:focus,select:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.13)}
+    input::placeholder{color:#8493a8;font-weight:500}
+    button{border:0;border-radius:13px;min-height:48px;padding:12px 18px;background:linear-gradient(135deg,#2785f4,#1054c7);color:#fff;font-size:15px;font-weight:850;cursor:pointer;box-shadow:0 6px 14px rgba(23,91,190,.18);transition:transform .16s,box-shadow .16s,filter .16s;text-transform:uppercase}
+    button:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(23,91,190,.22);filter:saturate(1.08)}
+    button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .scan-button{min-height:52px}
+    #productSearchResults{margin-top:10px;margin-bottom:14px;border:1px solid #d8e6f6!important;border-radius:13px;overflow:hidden;background:#fff}
+    #productSearchResults:empty{display:none}
+    #productSearchResults>div{padding:12px 15px!important;border-bottom:1px solid #e8eff8!important;cursor:pointer;color:#203653}
+    #productSearchResults>div:hover,#productSearchResults>div:focus{background:#eaf4ff!important;outline:2px solid #6da7f3;outline-offset:-2px}
+    #selectedProduct{display:none;padding:16px 18px!important;border:1px solid #8ce4ac;border-radius:17px!important;background:linear-gradient(110deg,#e8fff0,#d4f8e1)!important;color:#145c34;margin:14px 0 0!important;box-shadow:0 6px 16px rgba(15,151,73,.09)}
+    #selectedProduct strong{color:#086b35}
+    .selected-title{font-weight:900;text-transform:uppercase;margin-bottom:8px}
+    .selected-grid{display:grid;grid-template-columns:1fr 2fr .8fr;gap:12px}
+    .selected-cell{padding:9px 12px;background:rgba(255,255,255,.7);border-radius:11px;min-width:0}
+    .selected-cell small{display:block;color:#47805c;font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:4px}
+    .selected-cell strong{display:block;overflow-wrap:anywhere;font-size:15px}
+    .stock-entry-grid{display:grid;grid-template-columns:1fr 1.2fr 1.15fr;gap:18px;align-items:end}
+    .field-group{min-width:0}
+    .field-group label{min-height:20px}
+    .total-panel{min-height:91px;padding:12px 17px;border:1.5px solid #78e49b;border-radius:17px;background:linear-gradient(120deg,#e5ffeb,#c9f8d2);box-shadow:0 6px 16px rgba(20,150,66,.1);display:flex;flex-direction:column;justify-content:center}
+    .total-panel span{font-size:12px;color:#176b35;font-weight:900;text-transform:uppercase;letter-spacing:.3px}
+    #stockTotal{font-size:clamp(25px,3vw,34px)!important;font-weight:950!important;color:#086b2e;margin:4px 0 0!important;line-height:1.2}
+    .remarks-wrap{margin-top:18px}
+    .hint{margin:13px 0 18px;padding:11px 14px;border-radius:12px;background:linear-gradient(110deg,#fff5c9,#ffed9b);color:#78520b;font-size:13px;font-weight:750;line-height:1.45;text-transform:uppercase}
+    .action-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.8fr);gap:16px;align-items:center;margin-top:6px}
+    #addStockButton{min-height:66px;font-size:clamp(17px,2.2vw,23px);border-radius:17px;background:linear-gradient(120deg,#12a84d,#08752e)!important;box-shadow:0 8px 19px rgba(9,133,54,.24);letter-spacing:.3px}
+    #stockSuccessMessage{display:none;padding:14px 16px;border:1px solid #8fe2aa;border-left:6px solid #079443;border-radius:15px;background:linear-gradient(120deg,#e4ffec,#c7f7d6);color:#075d2c;box-shadow:0 7px 18px rgba(10,135,59,.12);font-size:13px;font-weight:800;line-height:1.5;text-transform:uppercase}
+    #stockSuccessMessage.show{display:block;animation:toastIn .22s ease-out}
+    @keyframes toastIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+    .footer-actions{display:flex;justify-content:flex-end;margin-top:16px}
+    .home-button{min-width:190px;background:linear-gradient(120deg,#eaf2ff,#d9e8fb)!important;color:#234a7d!important;border:1px solid #bfd5f2;box-shadow:none}
+    #scannerArea{margin:16px 0;padding:14px;border:1px dashed #8bb7ed;border-radius:15px;background:#f5faff;overflow:hidden}
+    #barcodeReader{max-width:100%;margin:auto}
+    #stopScannerButton{margin-top:12px;background:linear-gradient(120deg,#e45b5b,#b92e2e)!important}
+    .muted-note{font-size:12px;color:#64748b;margin-top:8px}
+    @media(max-width:760px){body{padding:15px 10px 28px}.page-header{gap:10px;padding:0 3px 12px}.brand-mark{width:48px;height:48px;font-size:26px;border-radius:14px}.brand-name{font-size:19px}.brand-rule{width:120px}.header-divider{height:40px}.page-heading h1{font-size:20px}.page-heading p{font-size:10px}.container{padding:14px;border-radius:19px}.top-line{align-items:flex-start;flex-direction:column}.timestamp{align-self:flex-end;font-size:12px}.section-card{padding:14px;margin-bottom:13px}.search-row{grid-template-columns:1fr}.scan-button{width:100%}.stock-entry-grid{grid-template-columns:1fr 1fr}.total-panel{grid-column:1/-1;min-height:78px}.action-row{grid-template-columns:1fr}.footer-actions{justify-content:stretch}.home-button{width:100%}.selected-grid{grid-template-columns:1fr 1fr}.selected-cell:nth-child(2){grid-column:1/-1;grid-row:2}}
+    @media(max-width:430px){.page-header{flex-wrap:wrap}.header-divider{display:none}.page-heading{width:100%}.brand-name{font-size:20px}.section-card{padding:12px}.section-pill,.section-heading{font-size:15px;padding:9px 13px}.stock-entry-grid{grid-template-columns:1fr}.total-panel{grid-column:auto}.selected-grid{grid-template-columns:1fr 1fr}input[type=text],input[type=number]{min-height:49px;font-size:16px}#addStockButton{min-height:58px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
 
     <!-- Load your JS functions -->
@@ -283,10 +215,10 @@
 
       document.getElementById('selectedProduct').style.display = 'block';
       document.getElementById('selectedProductDetails').innerHTML = `
-        Product: <strong>${escapeStockHtml(product.itemname)}</strong><br>
-        Item ID: ${escapeStockHtml(product.itemid)}<br>
-        Barcode: ${escapeStockHtml(product.barcode || '—')}<br>
-        Unit: ${escapeStockHtml(product.unit || 'pcs')}
+        <div class="selected-cell"><small>ITEM ID</small><strong>${escapeStockHtml(product.itemid)}</strong></div>
+        <div class="selected-cell"><small>PRODUCT NAME</small><strong>${escapeStockHtml(product.itemname)}</strong></div>
+        <div class="selected-cell"><small>UNIT</small><strong>${escapeStockHtml(product.unit || 'pcs')}</strong></div>
+        <div class="selected-cell"><small>BARCODE</small><strong>${escapeStockHtml(product.barcode || '—')}</strong></div>
       `;
 
       document.getElementById('productUnitLabel').textContent =
@@ -447,7 +379,7 @@
 
       const submitButton = document.getElementById('addStockButton');
       submitButton.disabled = true;
-      submitButton.textContent = 'Processing...';
+      submitButton.textContent = 'PROCESSING...';
 
       try {
         const { data, error } = await db.rpc('store_add_stock', {
@@ -484,7 +416,7 @@
         alert('Unable to add stock: ' + error.message);
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = 'Add Item to Store';
+        submitButton.textContent = '➕ ADD ITEM TO STORE';
       }
     }
   </script>
@@ -495,65 +427,80 @@
 
 </script>
 
-  <link rel="stylesheet" href="store-ui.css">
 </head>
 
 <body>
-  <div class="container">
-    <h2>ADD ITEMS TO STORE</h2>
-
-    <div class="timestamp" id="timeDisplay">🕒</div>
-
-    <label for="productSearch">Search Product (ID / Name / Barcode):</label>
-
-    <input
-      type="text"
-      id="productSearch"
-      placeholder="Enter Item ID, Product Name or Scan Barcode"
-      autocomplete="off">
-
-    <button type="button" id="scanBarcodeButton">
-      Scan Barcode Using Camera
-    </button>
-
-    <div id="scannerArea" style="display:none; margin:15px 0;">
-      <div id="barcodeReader" style="width:100%;"></div>
-      <button type="button" id="stopScannerButton">
-        Stop Camera
-      </button>
+  <header class="page-header">
+    <div class="brand-mark" aria-hidden="true">🏪</div>
+    <div>
+      <div class="brand-name">STOREOFGAMES</div>
+      <div class="brand-rule"></div>
     </div>
-
-    <div id="productSearchResults"
-        style="border:1px solid #ddd; border-radius:5px; margin-bottom:20px;">
+    <div class="header-divider"></div>
+    <div class="page-heading">
+      <h1>ADD ITEMS TO STORE</h1>
+      <p>STOCK ENTRY – RECORD INCOMING ITEMS</p>
     </div>
+  </header>
 
-    <div id="selectedProduct"
-        style="display:none; padding:12px; background:#eef7ff;
-                border-radius:6px; margin-bottom:20px;">
-      <strong>Selected Product</strong>
-      <p id="selectedProductDetails"></p>
+  <main class="container">
+    <section class="section-card">
+      <div class="top-line">
+        <div class="section-pill">📦 1. PRODUCT SELECTION</div>
+        <div class="timestamp" id="timeDisplay">🕒</div>
+      </div>
+
+      <label for="productSearch">🔍 SEARCH PRODUCT (ID / NAME / BARCODE)</label>
+      <div class="search-row">
+        <input type="text" id="productSearch" placeholder="ENTER ITEM ID, PRODUCT NAME OR SCAN BARCODE" autocomplete="off">
+        <button type="button" id="scanBarcodeButton" class="scan-button">📷 SCAN BARCODE USING CAMERA</button>
+      </div>
+
+      <div id="scannerArea" style="display:none;">
+        <div id="barcodeReader" style="width:100%;"></div>
+        <button type="button" id="stopScannerButton">STOP CAMERA</button>
+      </div>
+
+      <div id="productSearchResults"></div>
+      <div id="selectedProduct">
+        <div class="selected-title">✓ SELECTED PRODUCT</div>
+        <div id="selectedProductDetails" class="selected-grid"></div>
+      </div>
+      <input type="hidden" id="itemSelect">
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">📚 2. STOCK ENTRY</div>
+      <div class="stock-entry-grid">
+        <div class="field-group">
+          <label for="quantityInput">🛒 ENTER QUANTITY (<span id="productUnitLabel">UNIT</span>)</label>
+          <input type="number" id="quantityInput" min="0" step="0.001" placeholder="ENTER QUANTITY">
+        </div>
+        <div class="field-group">
+          <label for="aprice">🏷️ PURCHASE PRICE PER UNIT (₹)</label>
+          <input type="number" id="aprice" min="0" step="0.01" placeholder="PRICE PER UNIT">
+        </div>
+        <div class="total-panel">
+          <span>🪙 TOTAL PURCHASE AMOUNT (₹)</span>
+          <div id="stockTotal">0.00</div>
+        </div>
+      </div>
+
+      <div class="remarks-wrap">
+        <label for="aremarks">📝 REMARKS (OPTIONAL)</label>
+        <input type="text" id="aremarks" value="none" placeholder="ENTER REMARKS">
+      </div>
+
+      <div class="hint">ℹ️ ENTER QUANTITY AND PURCHASE PRICE. TOTAL AMOUNT WILL BE CALCULATED AUTOMATICALLY.</div>
+      <div class="action-row">
+        <button id="addStockButton" onclick="addItemToStore()">➕ ADD ITEM TO STORE</button>
+        <div id="stockSuccessMessage" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <div class="footer-actions">
+      <button class="home-button" onclick="backToHomepage()">⌂ BACK TO HOME PAGE</button>
     </div>
-
-    <input type="hidden" id="itemSelect">
-
-    <label for="quantityInput">Enter Quantity (<span id="productUnitLabel">unit</span>):</label>
-    <input type="number" id="quantityInput" min="0" step="0.001" placeholder="Enter quantity"> 
-
-    <label for="aprice">Purchase Price Per Unit:</label>
-    <input type="number" id="aprice" min="0" step="0.01" value="1" placeholder="Price per unit">
-    <label>Total Amount:</label>
-    <div id="stockTotal" style="font-size:20px; font-weight:bold; margin-bottom:20px;">0.00</div>
-
-
-    <label for="remarks">Enter Remarks(optional):</label> 
-    <input type="text" id="aremarks" value="none" placeholder="remarks"> <br>
-
-
-    <button id="addStockButton" onclick="addItemToStore()"> Add Item to Store</button>
-    <div id="stockSuccessMessage" class="stock-success-toast" role="status" aria-live="polite"></div>
-    <br><br>
-    <button onclick="backToHomepage()"> Back To Home Page</button> 
-
-  </div>
+  </main>
 </body>
 </html>
