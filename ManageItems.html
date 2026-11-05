@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -336,6 +337,56 @@
   background: #c44747;
 }
 
+    .print-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+      padding: 13px 15px;
+      border: 1px solid #cfe8d8;
+      border-radius: 12px;
+      background: linear-gradient(110deg, #f0fff5, #f2f8ff);
+    }
+    .print-toolbar .print-help { color: #52657b; font-size: 13px; }
+    .print-toolbar .print-controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .print-toolbar input {
+      width: 76px; min-height: 40px; padding: 8px 10px;
+      border: 1px solid #cbd5e1; border-radius: 8px; background: #fff;
+    }
+    .bulk-print-btn, .row-print-btn { background: linear-gradient(135deg, #16834a, #0b9b58); }
+    .row-print-btn { min-height: 32px; padding: 6px 9px; font-size: 12px; }
+    .select-cell { width: 42px; text-align: center; }
+    .select-cell input { width: 17px; height: 17px; cursor: pointer; }
+    .print-note { margin: 8px 0 0; color: #718096; font-size: 12px; }
+    #printArea { display: none; }
+    .barcode-label {
+      width: 50mm; height: 30mm; padding: 1.5mm 2mm;
+      overflow: hidden; display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      border: .15mm solid #d8d8d8; background: #fff; color: #000;
+      font-family: Arial, sans-serif; text-align: center; break-inside: avoid;
+    }
+    .barcode-label .label-store { width: 100%; font-size: 7pt; font-weight: 700; letter-spacing: .35px; line-height: 1; }
+    .barcode-label .label-name { width: 100%; font-size: 7.5pt; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .barcode-label svg { display: block; width: 44mm; height: 12mm; max-width: 100%; }
+    .barcode-label .label-code { font-family: Consolas, monospace; font-size: 8pt; font-weight: 700; line-height: 1; }
+    .barcode-label .label-item { font-size: 6.5pt; line-height: 1; }
+    @page { size: A4 portrait; margin: 5mm; }
+    @media print {
+      html, body { width: 200mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+      body * { visibility: hidden !important; }
+      #printArea, #printArea * { visibility: visible !important; }
+      #printArea {
+        display: grid !important; position: absolute; left: 0; top: 0;
+        width: 200mm; grid-template-columns: repeat(3, 50mm);
+        grid-auto-rows: 30mm; column-gap: 2mm; row-gap: 2mm;
+        justify-content: center; align-content: start;
+      }
+      .barcode-label { page-break-inside: avoid; }
+    }
+
     @media (max-width: 850px) {
       .filters {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -380,7 +431,6 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="store-ui.css">
 </head>
 
 <body>
@@ -463,6 +513,19 @@
 
       </div>
 
+      <div class="print-toolbar">
+        <div>
+          <strong>BARCODE LABEL PRINTING</strong>
+          <div class="print-help">Select products and print 50 × 30 mm labels on A4 sticker paper.</div>
+          <div class="print-note">Existing barcode values are used as-is. No barcode or product data will be changed.</div>
+        </div>
+        <div class="print-controls">
+          <label for="labelCopies">Copies / product</label>
+          <input id="labelCopies" type="number" min="1" max="100" value="1">
+          <button type="button" class="bulk-print-btn" id="printSelectedButton" disabled>Print Selected</button>
+        </div>
+      </div>
+
       <div id="message" class="message" role="status" aria-live="polite">
         Loading products...
       </div>
@@ -472,6 +535,7 @@
         <table>
           <thead>
             <tr>
+              <th class="select-cell"><input type="checkbox" id="selectAllVisible" aria-label="Select all products on this page"></th>
               <th>Item ID</th>
               <th>Barcode</th>
               <th>Product Name</th>
@@ -486,7 +550,7 @@
 
           <tbody id="productRows">
             <tr>
-              <td colspan="9" class="empty">Loading products...</td>
+              <td colspan="10" class="empty">Loading products...</td>
             </tr>
           </tbody>
         </table>
@@ -579,6 +643,8 @@
 
   </main>
 
+  <div id="printArea" aria-hidden="true"></div>
+
   <script>
 
     const state = {
@@ -586,7 +652,8 @@
       pageSize: 10,
       totalFiltered: 0,
       searchTimer: null,
-      loading: false
+      loading: false,
+      selectedItems: new Set()
     };
 
     const rowsElement = document.getElementById('productRows');
@@ -619,6 +686,112 @@
       return escapeHtml(value);
     }
 
+
+    function updatePrintSelectionUI() {
+      const count = state.selectedItems.size;
+      const button = document.getElementById('printSelectedButton');
+      button.disabled = count === 0;
+      button.textContent = count ? `Print Selected (${count})` : 'Print Selected';
+    }
+
+    function createBarcodeLabel(product) {
+      if (!product.barcode || !String(product.barcode).trim()) return null;
+      const label = document.createElement('div');
+      label.className = 'barcode-label';
+
+      const store = document.createElement('div');
+      store.className = 'label-store';
+      store.textContent = 'STOREOFGAMES';
+
+      const name = document.createElement('div');
+      name.className = 'label-name';
+      name.textContent = product.itemname || 'PRODUCT';
+      name.title = product.itemname || '';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const code = document.createElement('div');
+      code.className = 'label-code';
+      code.textContent = product.barcode;
+
+      const item = document.createElement('div');
+      item.className = 'label-item';
+      item.textContent = `ITEM ID: ${product.itemid}`;
+
+      label.append(store, name, svg, code, item);
+      try {
+        if (!window.JsBarcode) throw new Error('Barcode library did not load. Check your internet connection.');
+        JsBarcode(svg, String(product.barcode), {
+          format: 'CODE128', displayValue: false, margin: 0,
+          width: 1.25, height: 42, lineColor: '#000000', background: '#ffffff'
+        });
+      } catch (error) {
+        throw new Error(`Cannot create barcode for ${product.itemname || product.itemid}: ${error.message}`);
+      }
+      return label;
+    }
+
+    function printProducts(products, copies) {
+      if (!Array.isArray(products) || products.length === 0) {
+        alert('Please select at least one product to print.');
+        return;
+      }
+      const printable = products.filter(p => p.barcode && String(p.barcode).trim());
+      const missing = products.length - printable.length;
+      if (!printable.length) {
+        alert('The selected product(s) do not have barcode values. Add a barcode in Edit Product before printing.');
+        return;
+      }
+      const area = document.getElementById('printArea');
+      area.innerHTML = '';
+      try {
+        printable.forEach(product => {
+          for (let i = 0; i < copies; i++) area.appendChild(createBarcodeLabel(product));
+        });
+      } catch (error) {
+        area.innerHTML = '';
+        alert(error.message);
+        return;
+      }
+      if (missing) alert(`${missing} selected product(s) were skipped because they do not have a barcode.`);
+      window.addEventListener('afterprint', () => { area.innerHTML = ''; }, { once: true });
+      window.print();
+    }
+
+    async function printSingleProduct(itemId) {
+      const db = window.storeSupabase || (window.STORE_AUTH && window.STORE_AUTH.client);
+      try {
+        const { data, error } = await db.from(TABLES.storeconfigitems)
+          .select('itemid, barcode, itemname').eq('itemid', itemId).maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('Product not found. Refresh the product list.');
+        printProducts([data], 1);
+      } catch (error) {
+        alert('Unable to prepare barcode label: ' + error.message);
+      }
+    }
+
+    async function printSelectedProducts() {
+      const ids = Array.from(state.selectedItems);
+      if (!ids.length) return;
+      const copies = Number(document.getElementById('labelCopies').value);
+      if (!Number.isInteger(copies) || copies < 1 || copies > 100) {
+        alert('Enter copies per product between 1 and 100.');
+        return;
+      }
+      const db = window.storeSupabase || (window.STORE_AUTH && window.STORE_AUTH.client);
+      const button = document.getElementById('printSelectedButton');
+      button.disabled = true;
+      try {
+        const { data, error } = await db.from(TABLES.storeconfigitems)
+          .select('itemid, barcode, itemname').in('itemid', ids).order('itemid', { ascending: true });
+        if (error) throw error;
+        printProducts(data || [], copies);
+      } catch (error) {
+        alert('Unable to load selected products for printing: ' + error.message);
+      } finally {
+        updatePrintSelectionUI();
+      }
+    }
 
     // Load total, active and inactive product counts
 
@@ -769,7 +942,7 @@
 
           rowsElement.innerHTML = `
             <tr>
-              <td colspan="8" class="empty">
+              <td colspan="10" class="empty">
                 No products found.
               </td>
             </tr>
@@ -783,6 +956,7 @@
 
             return `
               <tr>
+                <td class="select-cell"><input type="checkbox" class="product-select" data-item-id="${escapeHtml(product.itemid)}" ${state.selectedItems.has(String(product.itemid)) ? 'checked' : ''} aria-label="Select ${escapeHtml(product.itemname || product.itemid)}"></td>
                 <td>${escapeHtml(product.itemid)}</td>
 
                 <td class="barcode">
@@ -821,6 +995,12 @@
                     onclick="editProduct(${Number(product.itemid)})">
                     Edit
                 </button>
+                <button type="button"
+                    class="action-btn row-print-btn"
+                    onclick="printSingleProduct(${Number(product.itemid)})"
+                    ${product.barcode ? '' : 'disabled title="No barcode assigned"'}>
+                    Print Barcode
+                </button>
                 </td>
               </tr>
             `;
@@ -829,6 +1009,12 @@
 
         }
 
+
+        const visibleCheckboxes = Array.from(rowsElement.querySelectorAll('.product-select'));
+        const selectAll = document.getElementById('selectAllVisible');
+        selectAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => state.selectedItems.has(cb.dataset.itemId));
+        selectAll.indeterminate = visibleCheckboxes.some(cb => state.selectedItems.has(cb.dataset.itemId)) && !selectAll.checked;
+        updatePrintSelectionUI();
 
         // Pagination information
 
@@ -865,7 +1051,7 @@
 
         rowsElement.innerHTML = `
           <tr>
-            <td colspan="8" class="empty">
+            <td colspan="10" class="empty">
               Unable to load products.
             </td>
           </tr>
@@ -1079,6 +1265,26 @@ async function saveProductChanges(event) {
 
       if (!session) return;
 
+      document.getElementById('printSelectedButton').addEventListener('click', printSelectedProducts);
+      rowsElement.addEventListener('change', event => {
+        const checkbox = event.target.closest('.product-select');
+        if (!checkbox) return;
+        if (checkbox.checked) state.selectedItems.add(checkbox.dataset.itemId);
+        else state.selectedItems.delete(checkbox.dataset.itemId);
+        const visible = Array.from(rowsElement.querySelectorAll('.product-select'));
+        const all = document.getElementById('selectAllVisible');
+        all.checked = visible.length > 0 && visible.every(cb => state.selectedItems.has(cb.dataset.itemId));
+        all.indeterminate = visible.some(cb => state.selectedItems.has(cb.dataset.itemId)) && !all.checked;
+        updatePrintSelectionUI();
+      });
+      document.getElementById('selectAllVisible').addEventListener('change', event => {
+        rowsElement.querySelectorAll('.product-select').forEach(cb => {
+          if (event.target.checked) state.selectedItems.add(cb.dataset.itemId);
+          else state.selectedItems.delete(cb.dataset.itemId);
+          cb.checked = event.target.checked;
+        });
+        updatePrintSelectionUI();
+      });
 
       // Search
 
